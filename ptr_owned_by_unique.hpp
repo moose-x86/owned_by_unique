@@ -232,8 +232,7 @@ private:
   template<typename _Tp2>
   void acquire_is_destroyed_flag_if_possible(detail::dtor_notify_enabled<_Tp2>* const pointee)
   {
-    if(pointee)
-        is_destroyed = pointee->is_destroyed;
+     is_destroyed = pointee ? pointee->is_destroyed : nullptr;
   }
 
   template<typename _Tp2>
