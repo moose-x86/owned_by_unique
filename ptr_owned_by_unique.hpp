@@ -242,21 +242,18 @@ private:
 };
 
 template< typename _PT, typename... Args >
-inline typename std::enable_if
-<
-  not std::is_array<_PT>::value, ptr_owned_by_unique<_PT>
->::type make_owned_by_unique(Args&&... args)
+inline typename std::enable_if<not std::is_array<_PT>::value, ptr_owned_by_unique<_PT> >::type
+make_owned_by_unique(Args&&... args)
 {
-  using pointee_t =
-     typename std::conditional
-     <
-         std::has_virtual_destructor<_PT>::value,
-         detail::dtor_notify_enabled<_PT>,
-         _PT
-     >::type;
+  using pointee_t = typename std::conditional <
+    std::has_virtual_destructor<_PT>::value,
+    detail::dtor_notify_enabled<_PT>,
+    _PT
+  >::type;
 
-  std::unique_ptr<pointee_t> tmp(new pointee_t{std::forward<Args>(args)...});
-  return ptr_owned_by_unique<_PT>(std::move(tmp));
+  return ptr_owned_by_unique<_PT> {
+      std::unique_ptr<pointee_t>(new pointee_t{std::forward<Args>(args)...})
+  };
 }
 
 template<> struct ptr_owned_by_unique<void> {};
