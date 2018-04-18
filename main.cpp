@@ -1,13 +1,27 @@
-#include "owned_by_unique.hpp"
+#include "ptr_owned_by_unique.hpp"
+#include <iostream>
+#include <cassert>
 
+struct Foo{ virtual ~Foo() = default; };
 
 int main()
 {
-    using namespace pobu;
-    owned_by_unique<int> v = make_owned_by_unique<int>();
-    
-    std::unique_ptr<int> x{new int{1}};
-    owned_by_unique<int> a = link(x);
+  auto p = pobu::make_owned_by_unique<Foo>();
+  auto r = pobu::make_owned_by_unique<int>();
+  {
+    std::unique_ptr<Foo> u{p};
+    assert(p.get() == u.get());
+  }
 
-    auto u = v.unique_ptr();
+  assert(p == p);
+  assert(p != r);
+
+  try
+  {
+    auto value = *p;
+  }
+  catch(pobu::ptr_is_already_deleted& e)
+  {
+    std::cout << "error: " << e.what() << std::endl;
+  }
 }
