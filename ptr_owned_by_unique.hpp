@@ -208,6 +208,14 @@ private:
     }
   };
 
+  ptr_owned_by_unique(element_type *const pointee, const bool acquired)
+  {
+    acquired_by_unique_ptr = std::make_shared<bool>(acquired);
+    shared_ptr::operator=(shared_ptr{pointee, deleter(acquired_by_unique_ptr)});
+
+    acquire_is_destroyed_flag_if_possible(pointee);
+  }
+
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
     if(is_destroyed and *is_destroyed)
@@ -237,14 +245,6 @@ private:
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
-
-  ptr_owned_by_unique(element_type *const pointee, const bool acquired)
-  {
-    acquired_by_unique_ptr = std::make_shared<bool>(acquired);
-    shared_ptr::operator=(shared_ptr{pointee, deleter(acquired_by_unique_ptr)});
-
-    acquire_is_destroyed_flag_if_possible(pointee);
-  }
 };
 
 template< typename _PT, typename... Args >
