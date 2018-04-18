@@ -194,18 +194,13 @@ private:
     void operator()(element_type *const pointee)
     {
       #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
-      assert(*acquired and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
+        assert(*acquired and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
       #endif
-      if (not *acquired) delete_pointee(pointee);
+      if (not *acquired) delete pointee;
     }
 
   private:
     std::shared_ptr<const bool> acquired;
-
-    void delete_pointee(element_type *const pointee)
-    {
-       delete pointee;
-    }
   };
 
   ptr_owned_by_unique(element_type *const pointee, const bool acquired)
