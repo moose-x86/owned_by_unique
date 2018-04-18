@@ -90,12 +90,11 @@ struct ptr_is_already_deleted : public std::runtime_error
 template<typename _Tp1>
 class ptr_owned_by_unique : private std::shared_ptr<_Tp1>
 {
-  using shared_ptr = std::shared_ptr<_Tp1>;
-  template <typename> friend class ptr_owned_by_unique;
+  static_assert(not std::is_array<_Tp1>::value, "ptr_owned_by_unique doesn't support arrays");
 
   constexpr static const bool is_acquired_true = true;
-
-  static_assert(not std::is_array<_Tp1>::value, "ptr_owned_by_unique doesn't support arrays");
+  template <typename> friend class ptr_owned_by_unique;
+  using shared_ptr = std::shared_ptr<_Tp1>;
 
 public:
   using element_type = _Tp1;
@@ -125,7 +124,7 @@ public:
   }
 
   template<typename _Tp2>
-  ptr_owned_by_unique& operator=(const ptr_owned_by_unique<_Tp2> &pointee)
+  ptr_owned_by_unique& operator=(const ptr_owned_by_unique<_Tp2>& pointee)
   {
     static_assert(std::is_same   <element_type, _Tp2>::value or
                   std::is_base_of<element_type, _Tp2>::value,
