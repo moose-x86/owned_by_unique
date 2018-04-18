@@ -218,8 +218,7 @@ private:
 
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
-    if(is_destroyed and *is_destroyed)
-        throw ptr_is_already_deleted{};
+    if(is_destroyed and *is_destroyed) throw ptr_is_already_deleted{};
   }
 
   template<typename _Tp2>
