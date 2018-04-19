@@ -214,15 +214,15 @@ TEST(test_cut, test)
 
     EXPECT_CALL(f, _install(Eq(p)));
     auto u = static_cast<system&>(f).install(p.unique_ptr());
-    
-    ASSERT_THROW(*p, pobu::ptr_was_alredy_deleted);
+
+    ASSERT_NO_THROW(*p);
 }
 ```
-When ```pobu::ptr_owned_by_unique``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```. 
+When ```pobu::ptr_owned_by_unique``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```.
 
 ```c++
  #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
-    assert(is_acquired() and 
+    assert(is_acquired() and
             "owned_by_unique: you created owned_by_unique, but unique_ptr was never acquired");
  #endif
 ```

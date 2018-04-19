@@ -37,58 +37,52 @@ template<typename> class unique_ptr_link;
 }
 
 template<typename T>
-detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u);
+detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept;
 
 template<typename R, typename T>
-detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u);
+detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
 
 namespace detail
 {
 struct empty_base {};
 using control_block = std::tuple<void*, bool, bool>;
 
+constexpr static std::uint8_t _ptr = 0;
+constexpr static std::uint8_t _acquired = 1;
+constexpr static std::uint8_t _deleted = 2;
+
 template<typename T>
 struct deleter
 {
-  void operator()(control_block *const pointee)
+  void operator()(control_block *const cb)
   {
     #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
-      assert((not std::get<0>(*pointee)) and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
+      assert((not std::get<_acquired>(*cb)) and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
     #endif
 
-    if((std::get<1>(*pointee) == false) and (std::get<2>(*pointee) == false))
+    if(std::get<_acquired>(*cb) == false)
     {
-      delete static_cast<T*>(std::get<0>(*pointee));
+      delete static_cast<T*>(std::get<_ptr>(*cb));
     }
-    delete pointee;
+    delete cb;
   }
 };
 
 struct shared_state
 {
-  virtual std::weak_ptr<control_block>& get() = 0;
-  virtual void set(std::weak_ptr<control_block> s) = 0;
-  virtual ~shared_state() = default;
+  virtual ~shared_state()
+  {
+    if(auto p = shared_state.lock()) std::get<_deleted>(*p) = true;
+  }
+
+  std::weak_ptr<control_block> shared_state;
 };
 
 template<typename _Base = empty_base>
 struct dtor_notify_enabled : public _Base, public shared_state
 {
   using _Base::_Base;
-  virtual ~dtor_notify_enabled()
-  {
-    if(!shared_state.expired())
-    {
-      auto p = shared_state.lock();
-      std::get<2>(*p) = true;
-    }
-  }
-
-  std::weak_ptr<control_block>& get() override { return shared_state; }
-  void set(std::weak_ptr<control_block> s) override {  shared_state = std::move(s); }
-
-private:
-  std::weak_ptr<control_block> shared_state;
+  virtual ~dtor_notify_enabled() = default;
 };
 
 template<typename _Tp1>
@@ -106,6 +100,22 @@ public:
 
   unique_ptr_link(unique_ptr_link&&) = default;
 };
+
+template<typename T>
+inline std::shared_ptr<control_block> create_control_block(std::unique_ptr<detail::dtor_notify_enabled<T>>& u)
+{
+  auto cb = new control_block{u.get(), {}, {}};
+  auto ptr = std::shared_ptr<control_block>{cb, detail::deleter<T>{}};
+
+  u->shared_state = ptr;
+  return ptr;
+}
+
+template<typename T>
+inline std::nullptr_t create_control_block(std::unique_ptr<T>& u)
+{
+  return nullptr;
+}
 
 } // namespace detail
 
@@ -138,35 +148,35 @@ public:
   using unique_ptr_t = std::unique_ptr<element_type>;
   using shared_ptr::use_count;
 
-  ptr_owned_by_unique(std::nullptr_t) : ptr_owned_by_unique() {}
-  ptr_owned_by_unique() : ptr_owned_by_unique(nullptr, not is_acquired_true) {}
+  ptr_owned_by_unique(std::nullptr_t) : ptr_owned_by_unique{} {}
+  ptr_owned_by_unique() : ptr_owned_by_unique{nullptr, not is_acquired_true} {}
 
   template<typename _Tp2>
   ptr_owned_by_unique(detail::unique_ptr_link<_Tp2>&& pointee)
   {
-    *this = ptr_owned_by_unique<_Tp2>(pointee._ptr, is_acquired_true);
+    *this = ptr_owned_by_unique<_Tp2>{pointee._ptr, is_acquired_true};
   }
 
   template<typename _Tp2>
   ptr_owned_by_unique(std::unique_ptr<_Tp2>&& pointee)
   {
-    *this = ptr_owned_by_unique<_Tp2>(pointee.release(), not is_acquired_true);
+    *this = ptr_owned_by_unique<_Tp2>{pointee.release(), not is_acquired_true};
   }
 
   template<typename _Tp2>
-  ptr_owned_by_unique(const ptr_owned_by_unique<_Tp2> &pointee)
+  ptr_owned_by_unique(const ptr_owned_by_unique<_Tp2>& pointee) noexcept
   {
     *this = pointee;
   }
 
   template<typename _Tp2>
-  ptr_owned_by_unique& operator=(const ptr_owned_by_unique<_Tp2>& pointee)
+  ptr_owned_by_unique& operator=(const ptr_owned_by_unique<_Tp2>& pointee) noexcept
   {
     static_assert(std::is_same   <element_type, _Tp2>::value or
                   std::is_base_of<element_type, _Tp2>::value,
                   "Assigning pointer of different or non-derived type");
 
-    acquire_shared_resource(pointee);
+    shared_ptr::operator=(pointee);
     return *this;
   }
 
@@ -194,7 +204,7 @@ public:
     {
       if(not is_acquired())
       {
-        acquired_by_unique_ptr() = true;
+        std::get<detail::_acquired>(*shared_ptr::get()) = true;
         return unique_ptr_t(get());
       }
       throw unique_ptr_already_acquired{};
@@ -202,81 +212,52 @@ public:
     return nullptr;
   }
 
-  bool is_acquired() const { return acquired_by_unique_ptr(); }
+  bool is_acquired() const noexcept { return std::get<detail::_acquired>(*shared_ptr::get()); }
   explicit operator unique_ptr_t() const { return unique_ptr(); }
-  explicit operator bool() const { return get_pointer() != nullptr; }
+  explicit operator bool() const noexcept { return get_pointer() != nullptr; }
 
-  std::int8_t compare_ptr(const void* const ptr) const
+  std::int8_t compare(const void* const ptr) const noexcept
   {
-    const std::ptrdiff_t diff = get_pointer() - reinterpret_cast<const _Tp1*>(ptr);
+    const std::ptrdiff_t diff = get_pointer() - static_cast<const element_type*>(ptr);
     return diff ? ( diff > 0 ? 1 : -1 ) : 0;
   }
 
   template<typename _Tp2>
-  std::int8_t compare_ptr(const ptr_owned_by_unique<_Tp2>& p) const
-  {
-    return compare_ptr(p.get_pointer());
-  }
+  std::int8_t compare(const ptr_owned_by_unique<_Tp2>& p) const noexcept { return compare(p.get_pointer()); }
 
 private:
-  bool is_destroyed() const { return std::get<2>(*shared_ptr::get()) == true; }
-  bool& acquired_by_unique_ptr() const { return std::get<1>(*shared_ptr::get()); }
-  element_type* get_pointer() const { return static_cast<element_type*>(std::get<0>(*shared_ptr::get())); }
+  element_type* get_pointer() const { return static_cast<element_type*>(std::get<detail::_ptr>(*shared_ptr::get())); }
 
   ptr_owned_by_unique(element_type *const pointee, const bool acquired)
   {
     acquire_is_destroyed_flag_if_possible(pointee);
     if(not shared_ptr::get())
     {
-       auto cb = new detail::control_block{pointee, false, false};
-       shared_ptr::operator=(shared_ptr(cb, detail::deleter<_Tp1>{}));
+       auto cb = new detail::control_block{pointee, {}, {}};
+       shared_ptr::operator=(shared_ptr{cb, detail::deleter<element_type>{}});
     }
 
-    acquired_by_unique_ptr() = acquired;
+    std::get<detail::_acquired>(*shared_ptr::get()) = acquired;
   }
 
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
-    if(is_destroyed()) throw ptr_is_already_deleted{};
-  }
-
-  template<typename _Tp2>
-  void acquire_shared_resource(const ptr_owned_by_unique<_Tp2> &pointee)
-  {
-    shared_ptr::operator=(pointee);
+     if(std::get<detail::_deleted>(*shared_ptr::get()))
+       throw ptr_is_already_deleted{};
   }
 
   template<typename _Tp2>
   typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
   {
-      auto ss = dynamic_cast<detail::shared_state*>(p);
-      if(ss != nullptr)
-        shared_ptr::operator=(ss->get().lock());
+    if(auto ss = dynamic_cast<detail::shared_state*>(p))
+      shared_ptr::operator=(ss->shared_state.lock());
   }
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
 };
-
-namespace detail
-{
-
-template<typename T>
-inline std::shared_ptr<control_block> get_control_block(std::unique_ptr<detail::dtor_notify_enabled<T>>& u)
-{
-  std::shared_ptr<control_block> ptr(new control_block{u.get(), false, false}, detail::deleter<T>{});
-  u->set(ptr);
-  return ptr;
-}
-
-template<typename T>
-inline nullptr_t get_control_block(std::unique_ptr<T>& u)
-{
-  return nullptr;
-}
-}
 
 template< typename _PT, typename... Args >
 inline typename std::enable_if<not std::is_array<_PT>::value, ptr_owned_by_unique<_PT> >::type
@@ -290,82 +271,82 @@ make_owned_by_unique(Args&&... args)
   >::type;
 
   std::unique_ptr<pointee_t> ptr(new pointee_t{std::forward<Args>(args)...});
-  auto p = detail::get_control_block(ptr);
-  return ptr_owned_by_unique<_PT> {std::move(ptr)};
+  auto p = detail::create_control_block(ptr);
+  return ptr_owned_by_unique<_PT>{std::move(ptr)};
 }
 
 template<> struct ptr_owned_by_unique<void> {};
 
 template<typename T>
-detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u)
+detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept
 {
   return detail::unique_ptr_link<T>(u);
 }
 
 template<typename R, typename T>
-detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u)
+detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept
 {
   return detail::unique_ptr_link<R>(u);
 }
 
 template<typename T1>
-inline bool operator==(const ptr_owned_by_unique<T1>& p1, std::nullptr_t)
+inline bool operator==(const ptr_owned_by_unique<T1>& p1, std::nullptr_t) noexcept
 {
-  return p1.compare_ptr(nullptr) == 0;
+  return p1.compare(nullptr) == 0;
 }
 
 template<typename T1>
-inline bool operator!=(const ptr_owned_by_unique<T1>& p1, std::nullptr_t)
+inline bool operator!=(const ptr_owned_by_unique<T1>& p1, std::nullptr_t) noexcept
 {
-  return p1.compare_ptr(nullptr) != 0;
+  return p1.compare(nullptr) != 0;
 }
 
 template<typename T1>
-inline bool operator==(std::nullptr_t, const ptr_owned_by_unique<T1>& p1)
+inline bool operator==(std::nullptr_t, const ptr_owned_by_unique<T1>& p1) noexcept
 {
   return p1 == nullptr;
 }
 
 template<typename T1>
-inline bool operator!=(std::nullptr_t, const ptr_owned_by_unique<T1>& p1)
+inline bool operator!=(std::nullptr_t, const ptr_owned_by_unique<T1>& p1) noexcept
 {
   return p1 != nullptr;
 }
 
 template<typename T1, typename T2>
-inline bool operator==(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator==(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
-  return p1.compare_ptr(p2) == 0;
+  return p1.compare(p2) == 0;
 }
 
 template<typename T1, typename T2>
-inline bool operator!=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator!=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
   return not(p1 == p2);
 }
 
 template<typename T1, typename T2>
-inline bool operator<(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator<(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
-  return p1.compare_ptr(p2) < 0;
+  return p1.compare(p2) < 0;
 }
 
 template<typename T1, typename T2>
-inline bool operator<=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator<=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
-  return p1.compare_ptr(p2) <= 0;
+  return p1.compare(p2) <= 0;
 }
 
 template<typename T1, typename T2>
-inline bool operator>(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator>(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
-  return p1.compare_ptr(p2) > 0;
+  return p1.compare(p2) > 0;
 }
 
 template<typename T1, typename T2>
-inline bool operator>=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2)
+inline bool operator>=(const ptr_owned_by_unique<T1>& p1, const ptr_owned_by_unique<T2>& p2) noexcept
 {
-  return p1.compare_ptr(p2) >= 0;
+  return p1.compare(p2) >= 0;
 }
 
 } //namespace pobu
