@@ -173,8 +173,8 @@ TEST_F(owned_by_unique_test_suite, testMoveAndLinkSemantics)
 
   test_move_semantics(std::move(u));
 
-  assert_that_operators_throw(p);
-  assert_that_operators_throw(r);
+  assert_that_operators_dont_throw(p);
+  assert_that_operators_dont_throw(r);
 }
 
 TEST_F(owned_by_unique_test_suite, deleteAfterCopyDontInvalidateCopy)
@@ -336,7 +336,7 @@ TEST_F(owned_by_unique_test_suite, testConversionInGoogleMockParams)
 
   base.test(p.unique_ptr());
 
-  assert_that_operators_throw(p);
+  assert_that_operators_dont_throw(p);
 }
 
 TEST_F(owned_by_unique_test_suite, testIsNullAndNotNullMatchers)
@@ -349,7 +349,7 @@ TEST_F(owned_by_unique_test_suite, testIsNullAndNotNullMatchers)
   expect_object_will_be_deleted(p);
 
   base.test(p.unique_ptr());
-  assert_that_operators_throw(p);
+  assert_that_operators_dont_throw(p);
 
   EXPECT_CALL(m, _test(IsNull())).WillOnce(Return(0));
   base.test(nullptr);

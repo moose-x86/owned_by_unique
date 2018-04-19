@@ -45,14 +45,50 @@ detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u);
 namespace detail
 {
 struct empty_base {};
+using control_block = std::tuple<void*, bool, bool>;
+
+template<typename T>
+struct deleter
+{
+  void operator()(control_block *const pointee)
+  {
+    #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
+      assert((not std::get<0>(*pointee)) and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
+    #endif
+
+    if((std::get<1>(*pointee) == false) and (std::get<2>(*pointee) == false))
+    {
+      delete static_cast<T*>(std::get<0>(*pointee));
+    }
+    delete pointee;
+  }
+};
+
+struct shared_state
+{
+  virtual std::weak_ptr<control_block> get() = 0;
+  virtual void set(std::weak_ptr<control_block> s) = 0;
+  virtual ~shared_state() = default;
+};
 
 template<typename _Base = empty_base>
-struct dtor_notify_enabled : public _Base
+struct dtor_notify_enabled : public _Base, public shared_state
 {
   using _Base::_Base;
-  virtual ~dtor_notify_enabled() { *is_destroyed = true; }
+  virtual ~dtor_notify_enabled()
+  {
+    if(!shared_state.expired())
+    {
+      auto p = shared_state.lock();
+      std::get<2>(*p) = true;
+    }
+  }
 
-  const std::shared_ptr<bool> is_destroyed{std::make_shared<bool>(false)};
+  std::weak_ptr<control_block> get() override { return shared_state; }
+  void set(std::weak_ptr<control_block> s) override {  shared_state = s; }
+
+private:
+  std::weak_ptr<control_block> shared_state;
 };
 
 template<typename _Tp1>
@@ -88,18 +124,18 @@ struct ptr_is_already_deleted : public std::runtime_error
 };
 
 template<typename _Tp1>
-class ptr_owned_by_unique : private std::shared_ptr<_Tp1>
+class ptr_owned_by_unique : private std::shared_ptr<detail::control_block>
 {
   static_assert(not std::is_array<_Tp1>::value, "ptr_owned_by_unique doesn't support arrays");
 
   constexpr static const bool is_acquired_true = true;
   template <typename> friend class ptr_owned_by_unique;
-  using shared_ptr = std::shared_ptr<_Tp1>;
+
+  using shared_ptr = std::shared_ptr<detail::control_block>;
 
 public:
   using element_type = _Tp1;
   using unique_ptr_t = std::unique_ptr<element_type>;
-  using shared_ptr::operator bool;
   using shared_ptr::use_count;
 
   ptr_owned_by_unique(std::nullptr_t) : ptr_owned_by_unique() {}
@@ -131,36 +167,34 @@ public:
                   "Assigning pointer of different or non-derived type");
 
     acquire_share_resource(pointee);
-    is_destroyed = pointee.is_destroyed;
-    acquired_by_unique_ptr = pointee.acquired_by_unique_ptr;
     return *this;
   }
 
   element_type* get() const
   {
     throw_if_is_destroyed_and_has_virtual_dtor();
-    return shared_ptr::get();
+    return get_pointer();
   }
 
   element_type* operator->() const
   {
     throw_if_is_destroyed_and_has_virtual_dtor();
-    return shared_ptr::operator->();
+    return get_pointer();
   }
 
   element_type& operator*() const
   {
     throw_if_is_destroyed_and_has_virtual_dtor();
-    return shared_ptr::operator*();
+    return *get_pointer();
   }
 
   unique_ptr_t unique_ptr() const
   {
-    if(shared_ptr::get())
+    if(get_pointer())
     {
       if(not is_acquired())
       {
-        *acquired_by_unique_ptr = true;
+        acquired_by_unique_ptr() = true;
         return unique_ptr_t(get());
       }
       throw unique_ptr_already_acquired{};
@@ -168,51 +202,42 @@ public:
     return nullptr;
   }
 
-  bool is_acquired() const { return *acquired_by_unique_ptr; }
+  bool is_acquired() const { return acquired_by_unique_ptr(); }
   explicit operator unique_ptr_t() const { return unique_ptr(); }
+  explicit operator bool() const { return get_pointer() != nullptr; }
 
   std::int8_t compare_ptr(const void* const ptr) const
   {
-    const std::ptrdiff_t diff = shared_ptr::get() - reinterpret_cast<const _Tp1*>(ptr);
+    const std::ptrdiff_t diff = get_pointer() - reinterpret_cast<const _Tp1*>(ptr);
     return diff ? ( diff > 0 ? 1 : -1 ) : 0;
   }
 
   template<typename _Tp2>
   std::int8_t compare_ptr(const ptr_owned_by_unique<_Tp2>& p) const
   {
-    return compare_ptr(p.std::template shared_ptr<_Tp2>::get());
+    return compare_ptr(p.get_pointer());
   }
 
 private:
-  std::shared_ptr<const bool> is_destroyed;
-  std::shared_ptr<bool> acquired_by_unique_ptr;
-
-  struct deleter
-  {
-    deleter(std::shared_ptr<bool> a) : acquired(a){}
-    void operator()(element_type *const pointee)
-    {
-      #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
-        assert(*acquired and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
-      #endif
-      if (not *acquired) delete pointee;
-    }
-
-  private:
-    std::shared_ptr<const bool> acquired;
-  };
+  bool is_destroyed() const { return std::get<2>(*shared_ptr::get()) == true; }
+  bool& acquired_by_unique_ptr() const { return std::get<1>(*shared_ptr::get()); }
+  element_type* get_pointer() const { return static_cast<element_type*>(std::get<0>(*shared_ptr::get())); }
 
   ptr_owned_by_unique(element_type *const pointee, const bool acquired)
   {
-    acquired_by_unique_ptr = std::make_shared<bool>(acquired);
-    shared_ptr::operator=(shared_ptr{pointee, deleter(acquired_by_unique_ptr)});
-
     acquire_is_destroyed_flag_if_possible(pointee);
+    if(not shared_ptr::get())
+    {
+       auto cb = new detail::control_block{pointee, false, false};
+       shared_ptr::operator=(shared_ptr(cb, detail::deleter<_Tp1>{}));
+    }
+
+    acquired_by_unique_ptr() = acquired;
   }
 
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
-    if(is_destroyed and *is_destroyed) throw ptr_is_already_deleted{};
+    if(is_destroyed()) throw ptr_is_already_deleted{};
   }
 
   template<typename _Tp2>
@@ -222,36 +247,54 @@ private:
   }
 
   template<typename _Tp2>
-  typename std::enable_if<std::is_polymorphic<_Tp2>::value,void>::type
+  typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
   {
-    acquire_is_destroyed_flag_if_possible(dynamic_cast<detail::dtor_notify_enabled<_Tp2>*>(p));
-  }
-
-  template<typename _Tp2>
-  void acquire_is_destroyed_flag_if_possible(detail::dtor_notify_enabled<_Tp2>* const pointee)
-  {
-     is_destroyed = pointee ? pointee->is_destroyed : nullptr;
+      auto ss = dynamic_cast<detail::shared_state*>(p);
+      if(ss != nullptr)
+      {
+        shared_ptr::operator=(ss->get().lock());
+      }
   }
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
+  acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
+  {}
 };
+
+namespace detail
+{
+
+template<typename T>
+inline std::shared_ptr<control_block> get_control_block(std::unique_ptr<detail::dtor_notify_enabled<T>>& u)
+{
+    std::shared_ptr<control_block> ptr(new control_block{u.get(), false, false}, detail::deleter<T>{});
+    u->set(ptr);
+    return ptr;
+}
+
+template<typename T>
+inline std::shared_ptr<control_block> get_control_block(std::unique_ptr<T>& u)
+{
+    return nullptr;
+}
+}
 
 template< typename _PT, typename... Args >
 inline typename std::enable_if<not std::is_array<_PT>::value, ptr_owned_by_unique<_PT> >::type
 make_owned_by_unique(Args&&... args)
 {
-  using pointee_t = typename std::conditional <
+  using pointee_t = typename std::conditional
+  <
     std::has_virtual_destructor<_PT>::value,
     detail::dtor_notify_enabled<_PT>,
     _PT
   >::type;
 
-  return ptr_owned_by_unique<_PT> {
-      std::unique_ptr<pointee_t>(new pointee_t{std::forward<Args>(args)...})
-  };
+  std::unique_ptr<pointee_t> ptr(new pointee_t{std::forward<Args>(args)...});
+  auto p = detail::get_control_block(ptr);
+  return ptr_owned_by_unique<_PT> {std::move(ptr)};
 }
 
 template<> struct ptr_owned_by_unique<void> {};
