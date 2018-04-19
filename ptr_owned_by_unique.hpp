@@ -66,7 +66,7 @@ struct deleter
 
 struct shared_state
 {
-  virtual std::weak_ptr<control_block> get() = 0;
+  virtual std::weak_ptr<control_block>& get() = 0;
   virtual void set(std::weak_ptr<control_block> s) = 0;
   virtual ~shared_state() = default;
 };
@@ -84,8 +84,8 @@ struct dtor_notify_enabled : public _Base, public shared_state
     }
   }
 
-  std::weak_ptr<control_block> get() override { return shared_state; }
-  void set(std::weak_ptr<control_block> s) override {  shared_state = s; }
+  std::weak_ptr<control_block>& get() override { return shared_state; }
+  void set(std::weak_ptr<control_block> s) override {  shared_state = std::move(s); }
 
 private:
   std::weak_ptr<control_block> shared_state;
@@ -166,7 +166,7 @@ public:
                   std::is_base_of<element_type, _Tp2>::value,
                   "Assigning pointer of different or non-derived type");
 
-    acquire_share_resource(pointee);
+    acquire_shared_resource(pointee);
     return *this;
   }
 
@@ -241,7 +241,7 @@ private:
   }
 
   template<typename _Tp2>
-  void acquire_share_resource(const ptr_owned_by_unique<_Tp2> &pointee)
+  void acquire_shared_resource(const ptr_owned_by_unique<_Tp2> &pointee)
   {
     shared_ptr::operator=(pointee);
   }
@@ -252,15 +252,12 @@ private:
   {
       auto ss = dynamic_cast<detail::shared_state*>(p);
       if(ss != nullptr)
-      {
         shared_ptr::operator=(ss->get().lock());
-      }
   }
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
-  {}
+  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
 };
 
 namespace detail
@@ -269,15 +266,15 @@ namespace detail
 template<typename T>
 inline std::shared_ptr<control_block> get_control_block(std::unique_ptr<detail::dtor_notify_enabled<T>>& u)
 {
-    std::shared_ptr<control_block> ptr(new control_block{u.get(), false, false}, detail::deleter<T>{});
-    u->set(ptr);
-    return ptr;
+  std::shared_ptr<control_block> ptr(new control_block{u.get(), false, false}, detail::deleter<T>{});
+  u->set(ptr);
+  return ptr;
 }
 
 template<typename T>
-inline std::shared_ptr<control_block> get_control_block(std::unique_ptr<T>& u)
+inline nullptr_t get_control_block(std::unique_ptr<T>& u)
 {
-    return nullptr;
+  return nullptr;
 }
 }
 

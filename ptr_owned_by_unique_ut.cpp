@@ -335,7 +335,6 @@ TEST_F(owned_by_unique_test_suite, testConversionInGoogleMockParams)
   EXPECT_CALL(m, _test(Eq(p))).WillOnce(Return(0));
 
   base.test(p.unique_ptr());
-
   assert_that_operators_dont_throw(p);
 }
 
@@ -343,13 +342,15 @@ TEST_F(owned_by_unique_test_suite, testIsNullAndNotNullMatchers)
 {
   mock_class m;
   mock_interface& base = m;
-  const auto p = make_owned_by_unique<test_mock>();
+  const auto p = make_owned_by_unique<test_mock>(0x123);
 
   EXPECT_CALL(m, _test(NotNull())).WillOnce(Return(0));
   expect_object_will_be_deleted(p);
 
   base.test(p.unique_ptr());
   assert_that_operators_dont_throw(p);
+
+  EXPECT_EQ(p->x, 0x123);
 
   EXPECT_CALL(m, _test(IsNull())).WillOnce(Return(0));
   base.test(nullptr);
