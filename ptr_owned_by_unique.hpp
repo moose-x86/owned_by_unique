@@ -187,7 +187,7 @@ public:
       if(not is_acquired())
       {
         std::get<detail::_acquired>(base::operator*()) = true;
-        return unique_ptr_t(get());
+        return unique_ptr_t(get_pointer());
       }
       throw unique_ptr_already_acquired{};
     }
