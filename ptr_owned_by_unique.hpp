@@ -44,11 +44,11 @@ detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
 
 namespace detail
 {
-using control_block = std::tuple<void*, bool, bool>;
-
 constexpr static std::uint8_t _ptr = 0;
 constexpr static std::uint8_t _acquired = 1;
 constexpr static std::uint8_t _deleted = 2;
+
+using control_block = std::tuple<void*, bool, bool>;
 
 template<typename T>
 struct deleter
