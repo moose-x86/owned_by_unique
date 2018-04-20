@@ -68,15 +68,14 @@ struct deleter
 
 struct shared_state
 {
-  std::weak_ptr<control_block> shared_state;
-
   virtual ~shared_state() { if(auto p = shared_state.lock()) std::get<_deleted>(*p) = true; }
+  std::weak_ptr<control_block> shared_state;
 };
 
-template<typename _Base>
-struct dtor_notify_enabled : public _Base, public shared_state
+template<typename _base>
+struct dtor_notify_enabled : public _base, public shared_state
 {
-  using _Base::_Base;
+  using _base::_base;
   ~dtor_notify_enabled() override = default;
 };
 
@@ -100,14 +99,15 @@ public:
 
 struct unique_ptr_already_acquired : public std::runtime_error
 {
-  unique_ptr_already_acquired()
-      : std::runtime_error("ptr_owned_by_unique: This pointer is already acquired by unique_ptr")
+  unique_ptr_already_acquired() :
+        std::runtime_error("ptr_owned_by_unique: This pointer is already acquired by unique_ptr")
   {}
 };
 
 struct ptr_is_already_deleted : public std::runtime_error
 {
-  ptr_is_already_deleted() : std::runtime_error("ptr_owned_by_unique: This pointer is already deleted")
+  ptr_is_already_deleted() :
+        std::runtime_error("ptr_owned_by_unique: This pointer is already deleted")
   {}
 };
 
@@ -183,7 +183,7 @@ public:
       if(not is_acquired())
       {
         std::get<detail::_acquired>(base::operator*()) = true;
-        return unique_ptr_t(get_pointer());
+        return unique_ptr_t{get_pointer()};
       }
       throw unique_ptr_already_acquired{};
     }
@@ -230,9 +230,7 @@ private:
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
   {
     auto ss = dynamic_cast<detail::shared_state*>(p);
-
-    if(ss)
-       base::operator=(ss->shared_state.lock());
+    if(ss) base::operator=(ss->shared_state.lock());
 
     return ss;
   }
@@ -245,8 +243,7 @@ private:
   typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
   set_shared_state_when_possible(_Tp2 *const p)
   {
-    if(p)
-      p->shared_state = *this;
+    if(p) p->shared_state = *this;
   }
 
   template<typename _Tp2>
