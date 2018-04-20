@@ -67,10 +67,6 @@ struct deleter
   }
 };
 
-   /**
-    * we could write modernize clang check
-    * for temp vars which are created before if and checked only in if statments,
-    */
 struct shared_state
 {
   virtual ~shared_state()
@@ -243,7 +239,7 @@ private:
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  set_shared_state_when_possible(_Tp2 *const p) {}
+  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
 
   template<typename _Tp2>
   typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
@@ -255,7 +251,7 @@ private:
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
+  set_shared_state_when_possible(_Tp2 *const p) {}
 };
 
 template< typename _PT, typename... Args >
