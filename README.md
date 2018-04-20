@@ -129,7 +129,7 @@ This code was tested with g++ and clang++ compilers.
 struct predicate
 {
   virtual bool is_true() const = 0;
-  virtual ~Mock() = default;
+  virtual ~predicate() = default;
 };
 
 struct predicate_mock : public predicate
