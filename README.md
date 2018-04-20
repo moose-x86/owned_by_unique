@@ -163,7 +163,7 @@ TEST(test_cut, test)
 Because of ```pobu::ptr_owned_by_unique``` is copyable, it can be used with ```std::unique_ptr``` when mocking Factories methods, which return ```std::unique_ptr``` and also member functions which take ```std::unique_ptr``` as paramter. In order to do that, in ```gmock_macro_for_unique_ptr.hpp``` header there are special macros which create dummy member functions inside mock class. They are used like this:
 
 ```c++
-struct item{};
+struct item{ virtual ~item() = default; };
 
 struct factory
 {
@@ -192,7 +192,7 @@ All macros from gmock have thier equivalents in ```gmock_macro_for_unique_ptr.hp
 
 ```c++
 
-struct app{};
+struct app{ virtual ~app() = default; };
 
 struct system
 {
