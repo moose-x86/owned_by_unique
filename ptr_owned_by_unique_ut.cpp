@@ -386,17 +386,15 @@ TEST_F(owned_by_unique_test_suite, assertThatCompareOperatorsDontThrow)
 
 TEST_F(owned_by_unique_test_suite, assertThatSharedStateWillBeUpdateAfterPtrOwnedDeletion)
 {
-    std::unique_ptr<test_mock> u;
-    {
-      auto p = make_owned_by_unique<test_mock>();
-      u = p.unique_ptr();
-    }
-
-    ptr_owned_by_unique<test_mock> p{std::move(u)};
-    expect_object_will_be_deleted(p);
-
+  std::unique_ptr<test_mock> u;
+  {
+    auto p = make_owned_by_unique<test_mock>();
     u = p.unique_ptr();
-    u.reset();
+  }
 
-    assert_that_operators_throw(p);
+  ptr_owned_by_unique<test_mock> p{std::move(u)};
+  expect_object_will_be_deleted(p);
+
+  p.unique_ptr().reset();
+  assert_that_operators_throw(p);
 }
