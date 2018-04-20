@@ -123,12 +123,12 @@ class ptr_owned_by_unique : private std::shared_ptr<detail::control_block>
   constexpr static const bool is_acquired_true = true;
   template <typename> friend class ptr_owned_by_unique;
 
-  using shared_ptr = std::shared_ptr<detail::control_block>;
+  using base = std::shared_ptr<detail::control_block>;
 
 public:
   using element_type = _Tp1;
   using unique_ptr_t = std::unique_ptr<element_type>;
-  using shared_ptr::use_count;
+  using base::use_count;
 
   ptr_owned_by_unique(std::nullptr_t) : ptr_owned_by_unique{} {}
   ptr_owned_by_unique() : ptr_owned_by_unique{nullptr, not is_acquired_true} {}
@@ -158,7 +158,7 @@ public:
                   std::is_base_of<element_type, _Tp2>::value,
                   "Assigning pointer of different or non-derived type");
 
-    shared_ptr::operator=(pointee);
+    base::operator=(pointee);
     return *this;
   }
 
@@ -186,7 +186,7 @@ public:
     {
       if(not is_acquired())
       {
-        std::get<detail::_acquired>(*shared_ptr::get()) = true;
+        std::get<detail::_acquired>(base::operator*()) = true;
         return unique_ptr_t(get());
       }
       throw unique_ptr_already_acquired{};
@@ -194,7 +194,7 @@ public:
     return nullptr;
   }
 
-  bool is_acquired() const noexcept { return std::get<detail::_acquired>(*shared_ptr::get()); }
+  bool is_acquired() const noexcept { return std::get<detail::_acquired>(base::operator*()); }
   explicit operator unique_ptr_t() const { return unique_ptr(); }
   explicit operator bool() const noexcept { return get_pointer() != nullptr; }
 
@@ -208,45 +208,49 @@ public:
   std::int8_t compare(const ptr_owned_by_unique<_Tp2>& p) const noexcept { return compare(p.get_pointer()); }
 
 private:
-  element_type* get_pointer() const { return static_cast<element_type*>(std::get<detail::_ptr>(*shared_ptr::get())); }
+  element_type* get_pointer() const { return static_cast<element_type*>(std::get<detail::_ptr>(base::operator*())); }
 
   ptr_owned_by_unique(element_type *const pointee, const bool acquired)
   {
-    acquire_is_destroyed_flag_if_possible(pointee);
-    if(not shared_ptr::get())
+    auto ss = acquire_is_destroyed_flag_if_possible(pointee);
+    if(not base::operator bool())
     {
        auto cb = new detail::control_block{pointee, {}, {}};
-       shared_ptr::operator=(shared_ptr{cb, detail::deleter<element_type>{}});
-       set_shared_state_when_possible(pointee);
+       base::operator=(base{cb, detail::deleter<element_type>{}});
+       set_shared_state_when_possible(ss);
     }
 
-    std::get<detail::_acquired>(*shared_ptr::get()) = acquired;
+    std::get<detail::_acquired>(base::operator*()) = acquired;
   }
 
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
-     if(std::get<detail::_deleted>(*shared_ptr::get()))
+     if(std::get<detail::_deleted>(base::operator*()))
        throw ptr_is_already_deleted{};
   }
 
   template<typename _Tp2>
-  typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
+  typename std::enable_if<std::is_polymorphic<_Tp2>::value, detail::shared_state*>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
   {
-    if(auto ss = dynamic_cast<detail::shared_state*>(p))
-      shared_ptr::operator=(ss->shared_state.lock());
+    auto ss = dynamic_cast<detail::shared_state*>(p);
+
+    if(ss)
+       base::operator=(ss->shared_state.lock());
+
+    return ss;
   }
 
   template<typename _Tp2>
-  typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
+  typename std::enable_if<not std::is_polymorphic<_Tp2>::value, detail::shared_state*>::type
+  acquire_is_destroyed_flag_if_possible(_Tp2 *const p) { return nullptr; }
 
   template<typename _Tp2>
   typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
   set_shared_state_when_possible(_Tp2 *const p)
   {
-    if(auto ss = dynamic_cast<detail::shared_state*>(p))
-      ss->shared_state = *this;
+    if(p)
+      p->shared_state = *this;
   }
 
   template<typename _Tp2>
