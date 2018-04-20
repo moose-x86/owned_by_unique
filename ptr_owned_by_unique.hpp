@@ -269,7 +269,7 @@ make_owned_by_unique(Args&&... args)
     _PT
   >::type;
 
-  return  std::unique_ptr<pointee_t>(new pointee_t{std::forward<Args>(args)...}) ;
+  return { std::unique_ptr<pointee_t>(new pointee_t{std::forward<Args>(args)...}) };
 }
 
 template<> struct ptr_owned_by_unique<void> {};
