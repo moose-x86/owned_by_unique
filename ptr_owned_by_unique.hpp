@@ -44,7 +44,6 @@ detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
 
 namespace detail
 {
-struct empty_base {};
 using control_block = std::tuple<void*, bool, bool>;
 
 constexpr static std::uint8_t _ptr = 0;
@@ -68,6 +67,10 @@ struct deleter
   }
 };
 
+   /**
+    * we could write modernize clang check
+    * for temp vars which are created before if and checked only in if statments,
+    */
 struct shared_state
 {
   virtual ~shared_state()
@@ -78,11 +81,11 @@ struct shared_state
   std::weak_ptr<control_block> shared_state;
 };
 
-template<typename _Base = empty_base>
+template<typename _Base>
 struct dtor_notify_enabled : public _Base, public shared_state
 {
   using _Base::_Base;
-  virtual ~dtor_notify_enabled() = default;
+  ~dtor_notify_enabled() override = default;
 };
 
 template<typename _Tp1>
@@ -100,23 +103,6 @@ public:
 
   unique_ptr_link(unique_ptr_link&&) = default;
 };
-
-template<typename T>
-inline std::shared_ptr<control_block> create_control_block(std::unique_ptr<detail::dtor_notify_enabled<T>>& u)
-{
-  auto cb = new control_block{u.get(), {}, {}};
-  auto ptr = std::shared_ptr<control_block>{cb, detail::deleter<T>{}};
-
-  u->shared_state = ptr;
-  return ptr;
-}
-
-template<typename T>
-inline std::nullptr_t create_control_block(std::unique_ptr<T>& u)
-{
-  return nullptr;
-}
-
 } // namespace detail
 
 
@@ -235,6 +221,7 @@ private:
     {
        auto cb = new detail::control_block{pointee, {}, {}};
        shared_ptr::operator=(shared_ptr{cb, detail::deleter<element_type>{}});
+       set_shared_state_when_possible(pointee);
     }
 
     std::get<detail::_acquired>(*shared_ptr::get()) = acquired;
@@ -256,6 +243,18 @@ private:
 
   template<typename _Tp2>
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
+  set_shared_state_when_possible(_Tp2 *const p) {}
+
+  template<typename _Tp2>
+  typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
+  set_shared_state_when_possible(_Tp2 *const p)
+  {
+    if(auto ss = dynamic_cast<detail::shared_state*>(p))
+      ss->shared_state = *this;
+  }
+
+  template<typename _Tp2>
+  typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p) {}
 };
 
@@ -271,7 +270,6 @@ make_owned_by_unique(Args&&... args)
   >::type;
 
   std::unique_ptr<pointee_t> ptr(new pointee_t{std::forward<Args>(args)...});
-  auto p = detail::create_control_block(ptr);
   return ptr_owned_by_unique<_PT>{std::move(ptr)};
 }
 
