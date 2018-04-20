@@ -9,14 +9,14 @@ Example of test classes:
 ```c++
 struct T
 {
-   T(int px = 0, int py = 0, int pz = 0) : x(px), y(py), z(pz){}
-   int x, y, z;
+  T(int px = 0, int py = 0, int pz = 0) : x(px), y(py), z(pz){}
+  int x, y, z;
 };
 
 struct X
 {
-   X(std::unique_ptr<T> m) : u(std::move(m)){}
-   std::unique_ptr<T> u;
+  X(std::unique_ptr<T> m) : u(std::move(m)){}
+  std::unique_ptr<T> u;
 };
 ```
 
@@ -57,9 +57,9 @@ using namespace pobu;
 
 try
 {
-   auto p = make_owned_by_unique<D>();
-   { auto u = p.unique_ptr(); } //nested scope, u deleted
-   p->x = 10; // this throws, for T type this would be undefined
+  auto p = make_owned_by_unique<D>();
+  { auto u = p.unique_ptr(); } //nested scope, u deleted
+  p->x = 10; // this throws, for T type this would be undefined
 }
 catch(const ptr_was_alredy_deleted&)
 {}
@@ -74,9 +74,9 @@ using namespace pobu;
 
 try
 {
-   auto p = make_owned_by_unique<T>();
-   auto u = p.unique_ptr();
-   auto v = p.unique_ptr(); //this throws
+  auto p = make_owned_by_unique<T>();
+  auto u = p.unique_ptr();
+  auto v = p.unique_ptr(); //this throws
 }
 catch(const unique_ptr_already_acquired&)
 {}
@@ -128,13 +128,13 @@ This code was tested with g++ and clang++ compilers.
 ```c++
 struct predicate
 {
-   virtual bool is_true() const = 0;
-   virtual ~Mock() = default;
+  virtual bool is_true() const = 0;
+  virtual ~Mock() = default;
 };
 
 struct predicate_mock : public predicate
 {
-   MOCK_CONST_METHOD0(is_true, bool());
+  MOCK_CONST_METHOD0(is_true, bool());
 };
 
 struct cut
@@ -147,14 +147,14 @@ private:
 
 TEST(test_cut, test)
 {
-   using namespace pobu;
-   using namespace testing;
+  using namespace pobu;
+  using namespace testing;
 
-   ptr_owned_by_unique<predicate_mock> p = make_owned_by_unique<StrictMock<predicate_mock>>();
-   cut s{p.unique_ptr()};
+  ptr_owned_by_unique<predicate_mock> p = make_owned_by_unique<StrictMock<predicate_mock>>();
+  cut s{p.unique_ptr()};
 
-   EXPECT_CALL(*p, is_true()).WillOnce(Return(true));
-   ASSERT_TRUE(cut.do_something());
+  EXPECT_CALL(*p, is_true()).WillOnce(Return(true));
+  ASSERT_TRUE(cut.do_something());
 }
 ```
 
@@ -163,59 +163,59 @@ TEST(test_cut, test)
 Because of ```pobu::ptr_owned_by_unique``` is copyable, it can be used with ```std::unique_ptr``` when mocking Factories methods, which return ```std::unique_ptr``` and also member functions which take ```std::unique_ptr``` as paramter. In order to do that, in ```gmock_macro_for_unique_ptr.hpp``` header there are special macros which create dummy member functions inside mock class. They are used like this:
 
 ```c++
-struct item{ virtual ~item() = default; };
+struct item { virtual ~item() = default; };
 
 struct factory
 {
-    virtual std::unique_ptr<item> create() const = 0;
-    virtual ~factory() = default;
+  virtual std::unique_ptr<item> create() const = 0;
+  virtual ~factory() = default;
 };
 
 struct factory_mock : public factory
 {
-    MOCK_UNIQUE_CONST_METHOD0(create, std::unique_ptr<item>());
+  MOCK_UNIQUE_CONST_METHOD0(create, std::unique_ptr<item>());
 };
 
 TEST(test_cut, test)
 {
-    using namespace testing;
+  using namespace testing;
 
-    factory_mock f;
-    auto p = pobu::make_owned_by_unique<item>();
-    EXPECT_CALL(f, _create()).WillOnce(Return(p));
+  factory_mock f;
+  auto p = pobu::make_owned_by_unique<item>();
+  EXPECT_CALL(f, _create()).WillOnce(Return(p));
 
-    auto u = static_cast<factory&>(f).create();
-    ASSERT_EQ(u.get(), p.get());
+  auto u = static_cast<factory&>(f).create();
+  ASSERT_EQ(u.get(), p.get());
 }
 ```
 All macros from gmock have thier equivalents in ```gmock_macro_for_unique_ptr.hpp``` to enable mocking member functions with ```std::unique_ptr```. Those macros also support ```override``` of mocked functions, so mocking of member functions should be less error prone.
 
 ```c++
 
-struct app{ virtual ~app() = default; };
+struct app { virtual ~app() = default; };
 
 struct system
 {
-    virtual void install(std::unique_ptr<app>) const = 0;
-    virtual ~factory() = default;
+  virtual void install(std::unique_ptr<app>) const = 0;
+  virtual ~factory() = default;
 };
 
 struct system_mock : public system
 {
-    MOCK_UNIQUE_CONST_METHOD1(install, void(std::unique_ptr<app>));
+  MOCK_UNIQUE_CONST_METHOD1(install, void(std::unique_ptr<app>));
 };
 
 TEST(test_cut, test)
 {
-    using namespace testing;
+  using namespace testing;
 
-    system_mock f;
-    auto p = pobu::make_owned_by_unique<app>();
+  system_mock f;
+  auto p = pobu::make_owned_by_unique<app>();
 
-    EXPECT_CALL(f, _install(Eq(p)));
-    auto u = static_cast<system&>(f).install(p.unique_ptr());
+  EXPECT_CALL(f, _install(Eq(p)));
+  auto u = static_cast<system&>(f).install(p.unique_ptr());
 
-    ASSERT_NO_THROW(*p);
+  ASSERT_NO_THROW(*p);
 }
 ```
 When ```pobu::ptr_owned_by_unique``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```.
