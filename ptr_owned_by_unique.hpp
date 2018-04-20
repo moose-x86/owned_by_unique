@@ -59,22 +59,18 @@ struct deleter
       assert((not std::get<_acquired>(*cb)) and "ASSERT: you created ptr_owned_by_unique, but unique_ptr was never acquired");
     #endif
 
-    if(std::get<_acquired>(*cb) == false)
-    {
+    if(not std::get<_acquired>(*cb))
       delete static_cast<T*>(std::get<_ptr>(*cb));
-    }
+
     delete cb;
   }
 };
 
 struct shared_state
 {
-  virtual ~shared_state()
-  {
-    if(auto p = shared_state.lock()) std::get<_deleted>(*p) = true;
-  }
-
   std::weak_ptr<control_block> shared_state;
+
+  virtual ~shared_state() { if(auto p = shared_state.lock()) std::get<_deleted>(*p) = true; }
 };
 
 template<typename _Base>
