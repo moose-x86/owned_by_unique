@@ -239,16 +239,10 @@ private:
   typename std::enable_if<not std::is_polymorphic<_Tp2>::value, detail::shared_state*>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p) { return nullptr; }
 
-  template<typename _Tp2>
-  typename std::enable_if<std::is_polymorphic<_Tp2>::value, void>::type
-  set_shared_state_when_possible(_Tp2 *const p)
+  void set_shared_state_when_possible(detail::shared_state *const p)
   {
     if(p) p->shared_state = *this;
   }
-
-  template<typename _Tp2>
-  typename std::enable_if<not std::is_polymorphic<_Tp2>::value, void>::type
-  set_shared_state_when_possible(_Tp2 *const p) {}
 };
 
 template< typename _PT, typename... Args >
