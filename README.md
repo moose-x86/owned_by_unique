@@ -221,10 +221,10 @@ TEST(test_cut, test)
   ASSERT_NO_THROW(*p);
 }
 ```
-When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_pointer``` is owner of memory and its name don't indicate real ownership(owned_pointer). This assert is disabled by default, but it can be enabled by compiling with define ```owned_pointer_ASSERT_DTOR```.
+When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_pointer``` is owner of memory and its name don't indicate real ownership(owned_pointer). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_POINTER_ASSERT_DTOR```.
 
 ```c++
-#ifdef owned_pointer_ASSERT_DTOR
+#ifdef OWNED_POINTER_ASSERT_DTOR
    assert(is_acquired() and
            "owned_pointer: you created owned_pointer, but unique_ptr was never acquired");
 #endif
