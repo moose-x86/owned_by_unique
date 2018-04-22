@@ -1,4 +1,4 @@
-#include "ptr_owned_by_unique.hpp"
+#include "owned_pointer.hpp"
 #include <iostream>
 #include <cassert>
 

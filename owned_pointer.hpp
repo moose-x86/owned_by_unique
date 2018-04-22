@@ -56,7 +56,7 @@ struct deleter
   void operator()(control_block *const cb)
   {
     #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
-      assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
+    assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
     #endif
 
     if(not std::get<_acquired>(*cb))
@@ -69,7 +69,7 @@ struct deleter
 struct shared_secret
 {
   virtual ~shared_secret() = default;
-  std::weak_ptr<control_block> shared_secret;
+  std::weak_ptr<control_block> weak_control_block;
 };
 
 template<typename _base>
@@ -78,7 +78,7 @@ struct dtor_notify_enabled : public _base, public shared_secret
   using _base::_base;
   ~dtor_notify_enabled() override
   {
-      if(auto p = shared_secret.lock()) std::get<_deleted>(*p) = true;
+    if(auto p = weak_control_block.lock()) std::get<_deleted>(*p) = true;
   }
 };
 
@@ -193,10 +193,25 @@ public:
     return nullptr;
   }
 
-  bool acquired() const noexcept { return std::get<detail::_acquired>(base::operator*()); }
-  bool expired() const noexcept { return std::get<detail::_deleted>(base::operator*()); }
-  explicit operator unique_ptr_t() const { return unique_ptr(); }
-  explicit operator bool() const noexcept { return get_pointer() != nullptr; }
+  bool acquired() const noexcept
+  {
+      return std::get<detail::_acquired>(base::operator*());
+  }
+
+  bool expired() const noexcept
+  {
+      return std::get<detail::_deleted>(base::operator*());
+  }
+
+  explicit operator unique_ptr_t() const
+  {
+      return unique_ptr();
+  }
+
+  explicit operator bool() const noexcept
+  {
+      return get_pointer() != nullptr;
+  }
 
   std::int8_t compare(const void* const ptr) const noexcept
   {
@@ -205,7 +220,10 @@ public:
   }
 
   template<typename _Tp2>
-  std::int8_t compare(const owned_pointer<_Tp2>& p) const noexcept { return compare(p.get_pointer()); }
+  std::int8_t compare(const owned_pointer<_Tp2>& p) const noexcept
+  {
+      return compare(p.get_pointer());
+  }
 
 private:
   element_type* get_pointer() const { return static_cast<element_type*>(std::get<detail::_ptr>(base::operator*())); }
@@ -234,7 +252,7 @@ private:
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p)
   {
     auto ss = dynamic_cast<detail::shared_secret*>(p);
-    if(ss) base::operator=(ss->shared_secret.lock());
+    if(ss) base::operator=(ss->weak_control_block.lock());
 
     return ss;
   }
@@ -245,7 +263,7 @@ private:
 
   void set_shared_secret_when_possible(detail::shared_secret *const p)
   {
-    if(p) p->shared_secret = *this;
+    if(p) p->weak_control_block = *this;
   }
 };
 

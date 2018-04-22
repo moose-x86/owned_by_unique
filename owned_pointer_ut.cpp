@@ -182,7 +182,6 @@ TEST_F(owned_by_unique_test_suite, testMoveAndLinkSemantics)
 TEST_F(owned_by_unique_test_suite, deleteAfterCopyDontInvalidateCopy)
 {
   owned_pointer<destruction_test_mock> copy;
-
   {
     auto p = make_owned<test_mock>();
     copy = p;
