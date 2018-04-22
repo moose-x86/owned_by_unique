@@ -195,22 +195,22 @@ public:
 
   bool acquired() const noexcept
   {
-      return std::get<detail::_acquired>(base::operator*());
+    return std::get<detail::_acquired>(base::operator*());
   }
 
   bool expired() const noexcept
   {
-      return std::get<detail::_deleted>(base::operator*());
+    return std::get<detail::_deleted>(base::operator*());
   }
 
   explicit operator unique_ptr_t() const
   {
-      return unique_ptr();
+    return unique_ptr();
   }
 
   explicit operator bool() const noexcept
   {
-      return get_pointer() != nullptr;
+    return get_pointer() != nullptr;
   }
 
   std::int8_t compare(const void* const ptr) const noexcept
@@ -222,7 +222,7 @@ public:
   template<typename _Tp2>
   std::int8_t compare(const owned_pointer<_Tp2>& p) const noexcept
   {
-      return compare(p.get_pointer());
+    return compare(p.get_pointer());
   }
 
 private:

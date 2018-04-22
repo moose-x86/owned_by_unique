@@ -13,6 +13,7 @@ int main()
     assert(p.get() == u.get());
   }
 
+  assert(p.expired());
   assert(p == p);
   assert(p != r);
 
