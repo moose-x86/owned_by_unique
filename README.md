@@ -26,7 +26,7 @@ Using ```pobu::owned_pointer```:
 using namespace pobu;
 
 owned_pointer<T> p = make_owned<T>(1, 2, 3);
-X x{p.unique_ptr()}; //after this point owned_by_unique is not owner of memory
+X x{p.unique_ptr()}; //after this point owned_pointer is not owner of memory
 
 x.u->x = 10;
 
@@ -161,7 +161,7 @@ TEST(test_cut, test)
 }
 ```
 
-## Example of usage owned_by_unique with google mock, mocking factory
+## Example of usage owned_pointer with google mock, mocking factory
 
 Because of ```pobu::owned_pointer``` is copyable, it can be used with ```std::unique_ptr``` when mocking Factories methods, which return ```std::unique_ptr``` and also member functions which take ```std::unique_ptr``` as paramter. In order to do that, in ```gmock_macro_for_unique_ptr.hpp``` header there are special macros which create dummy member functions inside mock class. They are used like this:
 
@@ -221,11 +221,11 @@ TEST(test_cut, test)
   ASSERT_NO_THROW(*p);
 }
 ```
-When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```.
+When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_pointer``` is owner of memory and its name don't indicate real ownership(owned_pointer). This assert is disabled by default, but it can be enabled by compiling with define ```owned_pointer_ASSERT_DTOR```.
 
 ```c++
-#ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
+#ifdef owned_pointer_ASSERT_DTOR
    assert(is_acquired() and
-           "owned_by_unique: you created owned_by_unique, but unique_ptr was never acquired");
+           "owned_pointer: you created owned_pointer, but unique_ptr was never acquired");
 #endif
 ```

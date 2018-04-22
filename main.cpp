@@ -22,7 +22,7 @@ int main()
 
   for(int i = 0; i < v.size(); i += 2)
   {
-    u.push_back(v[i].unique_ptr());
+    u.push_back( v[i].unique_ptr() );
   }
 
   u.clear();
