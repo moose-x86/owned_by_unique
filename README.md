@@ -1,9 +1,9 @@
-# Class ptr_owned_by_unique
+# Class owned_pointer
 This is test utility for dependency injection with ```std::unique_ptr``` smart pointer, written in C++ 11.
-Class ```pobu::ptr_owned_by_unique``` acts as facade to ```std::unique_ptr``` and has semantics and syntax of smart pointer.
-Class ```pobu::ptr_owned_by_unique``` is not intended to be used in production code. It is best to use this class with google mock, to inject mock to cut(class under test)  by ```std::unique_ptr``` and have reference to this mock in test suite.
+Class ```pobu::owned_pointer``` acts as facade to ```std::unique_ptr``` and has semantics and syntax of smart pointer.
+Class ```pobu::owned_pointer``` is not intended to be used in production code. It is best to use this class with google mock, to inject mock to cut(class under test)  by ```std::unique_ptr``` and have reference to this mock in test suite.
 
-## Semantics and syntax of ```pobu::ptr_owned_by_unique```
+## Semantics and syntax of ```pobu::owned_pointer```
 Example of test classes:
 
 ```c++
@@ -20,19 +20,19 @@ struct X
 };
 ```
 
-Using ```pobu::ptr_owned_by_unique```:
+Using ```pobu::owned_pointer```:
 
 ```c++
 using namespace pobu;
 
-ptr_owned_by_unique<T> p = make_owned_by_unique<T>(1, 2, 3);
+owned_pointer<T> p = make_owned_by_unique<T>(1, 2, 3);
 X x{p.unique_ptr()}; //after this point owned_by_unique is not owner of memory
 
 x.u->x = 10;
 
 assert(x.u->x == p->x);
 ```
-Class ```pobu::ptr_owned_by_unique``` is not owner of memory after ```unique_ptr()``` invokation.
+Class ```pobu::owned_pointer``` is not owner of memory after ```unique_ptr()``` invokation.
 
 ```c++
 using namespace pobu;
@@ -44,7 +44,7 @@ std::unique_ptr<T> u;
 }
 auto naked_ptr = u.get(); //u is still valid after destruction of p
 ```
-If class which is pointed by ```pobu::ptr_owned_by_unique``` has virtual dtor and was created by ```pobu::make_owned_by_unique```, ```pobu::ptr_owned_by_unique``` is able to detect that ```std::unique_ptr``` deleted resource. If class has no virtual dtor invoking ```get()```, ```operator->()``` or ```operator*()``` after ```std::unique_ptr``` deleted resource is undefined.
+If class which is pointed by ```pobu::owned_pointer``` has virtual dtor and was created by ```pobu::make_owned_by_unique```, ```pobu::owned_pointer``` is able to detect that ```std::unique_ptr``` deleted resource. If class has no virtual dtor invoking ```get()```, ```operator->()``` or ```operator*()``` after ```std::unique_ptr``` deleted resource is undefined.
 
 ```c++
 struct D
@@ -65,9 +65,9 @@ catch(const ptr_was_alredy_deleted&)
 {}
 
 ```
-Smart pointer ```pobu::ptr_owned_by_unique``` behaves like ```std::shared_ptr``` if member function ```unique_ptr()``` was not invoked. This means that it will destroy allocated memory, if ```std::unique_ptr``` was not acquired.
+Smart pointer ```pobu::owned_pointer``` behaves like ```std::shared_ptr``` if member function ```unique_ptr()``` was not invoked. This means that it will destroy allocated memory, if ```std::unique_ptr``` was not acquired.
 
-You can invoke ```unique_ptr()``` only once if ```pobu::ptr_owned_by_unique``` was in charge of valid memory or infinite number of times if ```pobu::ptr_owned_by_unique``` was pointing to nullptr.
+You can invoke ```unique_ptr()``` only once if ```pobu::owned_pointer``` was in charge of valid memory or infinite number of times if ```pobu::owned_pointer``` was pointing to nullptr.
 
 ```c++
 using namespace pobu;
@@ -81,30 +81,30 @@ try
 catch(const unique_ptr_already_acquired&)
 {}
 ```
-You can also create ```pobu::ptr_owned_by_unique``` from valid ```std::unique_ptr```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
+You can also create ```pobu::owned_pointer``` from valid ```std::unique_ptr```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
 
 ```c++
 using namespace pobu;
 
 auto u = std::make_unique<T>();
-ptr_owned_by_unique<T> p{link(u)};
+owned_pointer<T> p{link(u)};
 
 assert(p.get() == u.get());
 auto v = p.unique_ptr(); //this will throw
 ```
-Also you can move ```std::unique_ptr``` to ```pobu::ptr_owned_by_unique```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
+Also you can move ```std::unique_ptr``` to ```pobu::owned_pointer```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
 
 ```c++
 using namespace pobu;
 
 auto u = std::make_unique<T>();
-ptr_owned_by_unique<T> p{std::move(u)};
+owned_pointer<T> p{std::move(u)};
 
 assert(u.get() == nullptr);
 assert(p.get() != nullptr);
 u = p.unique_ptr(); // this will not throw
 ```
-Smart pointer ```pobu::ptr_owned_by_unique``` can be copied after acquirng ```std::unique_ptr```.
+Smart pointer ```pobu::owned_pointer``` can be copied after acquirng ```std::unique_ptr```.
 
 ```c++
 using namespace pobu;
@@ -150,7 +150,7 @@ TEST(test_cut, test)
   using namespace pobu;
   using namespace testing;
 
-  ptr_owned_by_unique<predicate_mock> p = make_owned_by_unique<StrictMock<predicate_mock>>();
+  owned_pointer<predicate_mock> p = make_owned_by_unique<StrictMock<predicate_mock>>();
   cut s{p.unique_ptr()};
 
   EXPECT_CALL(*p, is_true()).WillOnce(Return(true));
@@ -160,7 +160,7 @@ TEST(test_cut, test)
 
 ## Example of usage owned_by_unique with google mock, mocking factory
 
-Because of ```pobu::ptr_owned_by_unique``` is copyable, it can be used with ```std::unique_ptr``` when mocking Factories methods, which return ```std::unique_ptr``` and also member functions which take ```std::unique_ptr``` as paramter. In order to do that, in ```gmock_macro_for_unique_ptr.hpp``` header there are special macros which create dummy member functions inside mock class. They are used like this:
+Because of ```pobu::owned_pointer``` is copyable, it can be used with ```std::unique_ptr``` when mocking Factories methods, which return ```std::unique_ptr``` and also member functions which take ```std::unique_ptr``` as paramter. In order to do that, in ```gmock_macro_for_unique_ptr.hpp``` header there are special macros which create dummy member functions inside mock class. They are used like this:
 
 ```c++
 struct item { virtual ~item() = default; };
@@ -218,7 +218,7 @@ TEST(test_cut, test)
   ASSERT_NO_THROW(*p);
 }
 ```
-When ```pobu::ptr_owned_by_unique``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```.
+When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked, it can indicate a problem in test. This is why it would be good to invoke assert to indicate to the developer, that ```owned_by_unique``` is owner of memory and its name don't indicate real ownership(owned_by_unique). This assert is disabled by default, but it can be enabled by compiling with define ```OWNED_BY_UNIQUE_ASSERT_DTOR```.
 
 ```c++
 #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR

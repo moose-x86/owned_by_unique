@@ -46,7 +46,7 @@ template<typename T> T& _forward(T& p) { return p; }
 template<typename T>
 pobu::owned_pointer<T> _forward(std::unique_ptr<T>& u)
 {
-  return pobu::owned_pointer<T>(std::move(u));
+  return { std::move(u) };
 }
 
 template<typename T>
