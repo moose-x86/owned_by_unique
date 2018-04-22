@@ -100,11 +100,6 @@ public:
 
 } // namespace detail
 
-namespace
-{
-detail::control_block __place_holder{nullptr, {}, {}};
-}
-
 struct unique_ptr_already_acquired : public std::runtime_error
 {
   unique_ptr_already_acquired() :
