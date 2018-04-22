@@ -140,6 +140,8 @@ TEST_F(owned_by_unique_test_suite, testCreatingPtrOwnedByUniqueFromNullptr)
   ASSERT_EQ(u.get(), p.get());
   ASSERT_TRUE(not u);
   ASSERT_TRUE(not p);
+  ASSERT_FALSE(p.expired());
+  ASSERT_FALSE(p.acquired());
 }
 
 TEST_F(owned_by_unique_test_suite, copyConstructorTest)
@@ -398,4 +400,16 @@ TEST_F(owned_by_unique_test_suite, assertThatSharedStateWillBeUpdateAfterPtrOwne
 
   p.unique_ptr().reset();
   assert_that_operators_throw(p);
+}
+
+TEST_F(owned_by_unique_test_suite, assertThatMoveSemanticsIsWorking)
+{
+  auto p = make_owned<test_mock>();
+  owned_pointer<test_mock> r{std::move(p)};
+
+  ASSERT_EQ(p.get(), nullptr);
+  ASSERT_EQ(p.acquired(), false);
+  ASSERT_EQ(p.expired(), false);
+
+  expect_object_will_be_deleted(r);
 }

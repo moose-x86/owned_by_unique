@@ -61,8 +61,11 @@ struct deleter
 
     std::unique_ptr<control_block> u{cb};
 
-    if(not std::get<_acquired>(*u))
-      delete static_cast<T*>(std::get<_ptr>(*u));
+    if(cb)
+    {
+      if(not std::get<_acquired>(*u))
+        delete static_cast<T*>(std::get<_ptr>(*u));
+    }
   }
 };
 
@@ -97,8 +100,13 @@ public:
 
   unique_ptr_link(unique_ptr_link&&) = default;
 };
+
 } // namespace detail
 
+namespace
+{
+detail::control_block __place_holder{nullptr, {}, {}};
+}
 
 struct unique_ptr_already_acquired : public std::runtime_error
 {
@@ -129,8 +137,8 @@ public:
   using unique_ptr_t = std::unique_ptr<element_type>;
   using base::use_count;
 
-  owned_pointer(std::nullptr_t) : owned_pointer{} {}
-  owned_pointer() : owned_pointer{nullptr, not is_acquired_true} {}
+  owned_pointer() noexcept = default;
+  owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename _Tp2>
   owned_pointer(detail::unique_ptr_link<_Tp2>&& pointee)
@@ -158,6 +166,25 @@ public:
                   "Assigning pointer of different or non-derived type");
 
     base::operator=(pointee);
+    return *this;
+  }
+
+  template<typename _Tp2>
+  owned_pointer(owned_pointer<_Tp2>&& p) noexcept : base(std::move(p))
+  {
+    static_assert(std::is_same   <element_type, _Tp2>::value or
+                  std::is_base_of<element_type, _Tp2>::value,
+                  "Assigning pointer of different or non-derived type");
+  }
+
+  template<typename _Tp2>
+  owned_pointer& operator=(owned_pointer<_Tp2>&& p) noexcept
+  {
+    static_assert(std::is_same   <element_type, _Tp2>::value or
+                  std::is_base_of<element_type, _Tp2>::value,
+                  "Assigning pointer of different or non-derived type");
+
+    base::operator=(std::move(p));
     return *this;
   }
 
@@ -195,12 +222,12 @@ public:
 
   bool acquired() const noexcept
   {
-    return std::get<detail::_acquired>(base::operator*());
+    return base::get() and std::get<detail::_acquired>(base::operator*());
   }
 
   bool expired() const noexcept
   {
-    return std::get<detail::_deleted>(base::operator*());
+    return base::get() and std::get<detail::_deleted>(base::operator*());
   }
 
   explicit operator unique_ptr_t() const
@@ -226,7 +253,11 @@ public:
   }
 
 private:
-  element_type* get_pointer() const { return static_cast<element_type*>(std::get<detail::_ptr>(base::operator*())); }
+  element_type* get_pointer() const noexcept
+  {
+      return base::get() ?
+            static_cast<element_type*>(std::get<detail::_ptr>(base::operator*())) : nullptr;
+  }
 
   owned_pointer(element_type *const pointee, const bool acquired)
   {

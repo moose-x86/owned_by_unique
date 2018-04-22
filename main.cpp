@@ -1,28 +1,32 @@
 #include "owned_pointer.hpp"
 #include <iostream>
 #include <cassert>
+#include <algorithm>
+#include <vector>
 
-struct Foo{ virtual ~Foo() = default; };
+struct Foo
+{
+  Foo() { puts("Foo"); }
+  virtual ~Foo() { puts("~Foo"); }
+};
 
 int main()
 {
-  auto p = pobu::make_owned<Foo>();
-  auto r = pobu::make_owned<int>();
-  {
-    std::unique_ptr<Foo> u{p};
-    assert(p.get() == u.get());
-  }
+  using namespace ::pobu;
 
-  assert(p.expired());
-  assert(p == p);
-  assert(p != r);
+  std::vector<std::unique_ptr<Foo>> u;
+  std::vector<owned_pointer<Foo>> v(20);
+  std::generate(v.begin(), v.end(), [](){ return pobu::make_owned<Foo>(); });
 
-  try
-  {
-    auto value = *p;
-  }
-  catch(pobu::ptr_is_already_deleted& e)
-  {
-    std::cout << "error: " << e.what() << std::endl;
-  }
+  std::cout << "---------------------------\n";
+
+  for(int i = 0; i < v.size(); i += 2)
+    u.push_back(v[i].unique_ptr());
+
+  v.erase(
+      std::remove_if(v.begin(), v.end(), [](auto& p) { return p.acquired(); }),
+      v.end());
+
+  std::cout << v.size() << "\n";
+  std::cout << "---------------------------\n";
 }
