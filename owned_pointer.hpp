@@ -59,10 +59,10 @@ struct deleter
     assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
     #endif
 
-    if(not std::get<_acquired>(*cb))
-      delete static_cast<T*>(std::get<_ptr>(*cb));
+    std::unique_ptr<control_block> u{cb};
 
-    delete cb;
+    if(not std::get<_acquired>(*u))
+      delete static_cast<T*>(std::get<_ptr>(*u));
   }
 };
 
