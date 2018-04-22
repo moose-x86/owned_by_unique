@@ -25,7 +25,7 @@ Using ```pobu::owned_pointer```:
 ```c++
 using namespace pobu;
 
-owned_pointer<T> p = make_owned_by_unique<T>(1, 2, 3);
+owned_pointer<T> p = make_owned<T>(1, 2, 3);
 X x{p.unique_ptr()}; //after this point owned_by_unique is not owner of memory
 
 x.u->x = 10;
@@ -39,12 +39,12 @@ using namespace pobu;
 
 std::unique_ptr<T> u;
 {
-  auto p = make_owned_by_unique<T>();
+  auto p = make_owned<T>();
   u = p.unique_ptr();
 }
 auto naked_ptr = u.get(); //u is still valid after destruction of p
 ```
-If class which is pointed by ```pobu::owned_pointer``` has virtual dtor and was created by ```pobu::make_owned_by_unique```, ```pobu::owned_pointer``` is able to detect that ```std::unique_ptr``` deleted resource. If class has no virtual dtor invoking ```get()```, ```operator->()``` or ```operator*()``` after ```std::unique_ptr``` deleted resource is undefined.
+If class which is pointed by ```pobu::owned_pointer``` has virtual dtor and was created by ```pobu::make_owned```, ```pobu::owned_pointer``` is able to detect that ```std::unique_ptr``` deleted resource. If class has no virtual dtor invoking ```get()```, ```operator->()``` or ```operator*()``` after ```std::unique_ptr``` deleted resource is undefined.
 
 ```c++
 struct D
@@ -57,7 +57,7 @@ using namespace pobu;
 
 try
 {
-  auto p = make_owned_by_unique<D>();
+  auto p = make_owned<D>();
   { auto u = p.unique_ptr(); } //nested scope, u deleted
   p->x = 10; // this throws, for T type this would be undefined
 }
@@ -74,7 +74,7 @@ using namespace pobu;
 
 try
 {
-  auto p = make_owned_by_unique<T>();
+  auto p = make_owned<T>();
   auto u = p.unique_ptr();
   auto v = p.unique_ptr(); //this throws
 }
@@ -109,7 +109,7 @@ Smart pointer ```pobu::owned_pointer``` can be copied after acquirng ```std::uni
 ```c++
 using namespace pobu;
 
-auto p = make_owned_by_unique<D>();
+auto p = make_owned<D>();
 auto u = p.unique_ptr();
 auto r = p;
 auto v = r.unique_ptr(); //this throws
@@ -150,7 +150,7 @@ TEST(test_cut, test)
   using namespace pobu;
   using namespace testing;
 
-  owned_pointer<predicate_mock> p = make_owned_by_unique<StrictMock<predicate_mock>>();
+  owned_pointer<predicate_mock> p = make_owned<StrictMock<predicate_mock>>();
   cut s{p.unique_ptr()};
 
   EXPECT_CALL(*p, is_true()).WillOnce(Return(true));
@@ -181,7 +181,7 @@ TEST(test_cut, test)
   using namespace testing;
 
   factory_mock f;
-  auto p = pobu::make_owned_by_unique<item>();
+  auto p = pobu::make_owned<item>();
   EXPECT_CALL(f, _create()).WillOnce(Return(p));
 
   auto u = static_cast<factory&>(f).create();
@@ -210,7 +210,7 @@ TEST(test_cut, test)
   using namespace testing;
 
   system_mock f;
-  auto p = pobu::make_owned_by_unique<app>();
+  auto p = pobu::make_owned<app>();
 
   EXPECT_CALL(f, _install(Eq(p)));
   auto u = static_cast<system&>(f).install(p.unique_ptr());
