@@ -337,4 +337,52 @@ inline bool operator>=(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2)
   return p1.compare(p2) >= 0;
 }
 
+template<typename T1, typename T2>
+inline bool operator==(const owned_pointer<T1>& p1, const T2* p2) noexcept
+{
+  return p1.compare(p2) == 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator==(const T1* p1, const owned_pointer<T2>& p2) noexcept
+{
+  return p2.compare(p1) == 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator!=(const owned_pointer<T1>& p1, const T2* p2) noexcept
+{
+  return p1.compare(p2) != 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator!=(const T1* p1, const owned_pointer<T2>& p2) noexcept
+{
+  return p2.compare(p1) != 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator==(const owned_pointer<T1>& p1, const std::unique_ptr<T2>& p2) noexcept
+{
+  return p1.compare(p2.get()) == 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator==(const std::unique_ptr<T1>& p1, const owned_pointer<T2>& p2) noexcept
+{
+  return p2.compare(p1.get()) == 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator!=(const owned_pointer<T1>& p1, const std::unique_ptr<T2>& p2) noexcept
+{
+  return p1.compare(p2.get()) != 0;
+}
+
+template<typename T1, typename T2>
+inline bool operator!=(const std::unique_ptr<T1> p1, const owned_pointer<T2>& p2) noexcept
+{
+  return p2.compare(p1.get()) != 0;
+}
+
 } //namespace pobu
