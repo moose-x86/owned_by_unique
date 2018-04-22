@@ -61,11 +61,8 @@ struct deleter
 
     std::unique_ptr<control_block> u{cb};
 
-    if(cb)
-    {
-      if(not std::get<_acquired>(*u))
-        delete static_cast<T*>(std::get<_ptr>(*u));
-    }
+    if(not std::get<_acquired>(*u))
+      delete static_cast<T*>(std::get<_ptr>(*u));
   }
 };
 
