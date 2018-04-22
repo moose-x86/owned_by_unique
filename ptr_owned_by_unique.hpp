@@ -180,7 +180,7 @@ public:
   {
     if(get_pointer())
     {
-      if(not is_acquired())
+      if(not acquired())
       {
         std::get<detail::_acquired>(base::operator*()) = true;
         return unique_ptr_t{get_pointer()};
@@ -190,7 +190,8 @@ public:
     return nullptr;
   }
 
-  bool is_acquired() const noexcept { return std::get<detail::_acquired>(base::operator*()); }
+  bool acquired() const noexcept { return std::get<detail::_acquired>(base::operator*()); }
+  bool expired() const noexcept { return std::get<detail::_deleted>(base::operator*()); }
   explicit operator unique_ptr_t() const { return unique_ptr(); }
   explicit operator bool() const noexcept { return get_pointer() != nullptr; }
 
@@ -221,7 +222,7 @@ private:
 
   void throw_if_is_destroyed_and_has_virtual_dtor() const
   {
-     if(std::get<detail::_deleted>(base::operator*()))
+     if(expired())
        throw ptr_is_already_deleted{};
   }
 
@@ -236,7 +237,7 @@ private:
   }
 
   template<typename _Tp2>
-  typename std::enable_if<not std::is_polymorphic<_Tp2>::value, detail::shared_state*>::type
+  typename std::enable_if<!std::is_polymorphic<_Tp2>::value, detail::shared_state*>::type
   acquire_is_destroyed_flag_if_possible(_Tp2 *const p) { return nullptr; }
 
   void set_shared_state_when_possible(detail::shared_state *const p)

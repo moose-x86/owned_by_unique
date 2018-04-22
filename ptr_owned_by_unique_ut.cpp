@@ -63,6 +63,7 @@ protected:
 
   template<typename T> void assert_that_operators_throw(const ptr_owned_by_unique<T> &p)
   {
+    ASSERT_TRUE(p.expired());
     ASSERT_THROW(*p, ptr_is_already_deleted);
     ASSERT_THROW(p.get(), ptr_is_already_deleted);
     ASSERT_THROW(p.operator->(), ptr_is_already_deleted);
@@ -70,6 +71,7 @@ protected:
 
   template<typename T> void assert_that_operators_dont_throw(const ptr_owned_by_unique<T> &p)
   {
+    ASSERT_FALSE(p.expired());
     ASSERT_NO_THROW(*p);
     ASSERT_NO_THROW(p.get());
     ASSERT_NO_THROW(p.operator->());
@@ -91,7 +93,7 @@ protected:
 
   template<typename T> bool equal(const ptr_owned_by_unique<T> &p1, const ptr_owned_by_unique<T> &p2)
   {
-    return (p1.get() == p2.get()) and (p1.is_acquired() == p2.is_acquired());
+    return (p1.get() == p2.get()) and (p1.acquired() == p2.acquired());
   }
 
   void expect_object_will_be_deleted(const ptr_owned_by_unique<destruction_test_mock> p)
@@ -113,12 +115,12 @@ protected:
 
   void test_link_semantics(ptr_owned_by_unique<simple_base_class> p)
   {
-    ASSERT_TRUE(p.is_acquired());
+    ASSERT_TRUE(p.acquired());
   }
 
   void test_move_semantics(ptr_owned_by_unique<test_mock> p)
   {
-    ASSERT_FALSE(p.is_acquired());
+    ASSERT_FALSE(p.acquired());
   }
 };
 
@@ -166,7 +168,7 @@ TEST_F(owned_by_unique_test_suite, testMoveAndLinkSemantics)
   test_link_semantics(link(u));
 
   const ptr_owned_by_unique<destruction_test_mock> r = link(u);
-  ASSERT_TRUE(r.is_acquired());
+  ASSERT_TRUE(r.acquired());
 
   assert_that_operators_dont_throw(p);
   assert_that_operators_dont_throw(r);
@@ -197,7 +199,7 @@ TEST_F(owned_by_unique_test_suite, isAcquireByUniquePtr)
   auto p = make_owned_by_unique<int>();
   auto u = p.unique_ptr();
 
-  ASSERT_TRUE(p.is_acquired());
+  ASSERT_TRUE(p.acquired());
 
   assert_that_get_unique_throws(p);
   assert_that_operators_dont_throw(p);
@@ -235,7 +237,7 @@ TEST_F(owned_by_unique_test_suite, objectWillBeDeletedWhenMultipleSharedObjects)
   create_nine_copies_of(p);
   expect_object_will_be_deleted(p);
 
-  ASSERT_FALSE(p.is_acquired());
+  ASSERT_FALSE(p.acquired());
   EXPECT_EQ(p.use_count(), 10u);
 }
 
