@@ -26,7 +26,7 @@
 #include <memory>
 #include <type_traits>
 #include <gmock/gmock.h>
-#include "ptr_owned_by_unique.hpp"
+#include "owned_pointer.hpp"
 
 namespace pobu_gmock
 {
@@ -44,9 +44,9 @@ struct nth_arg<i, n, T> { typedef T type; };
 template<typename T> T& _forward(T& p) { return p; }
 
 template<typename T>
-pobu::ptr_owned_by_unique<T> _forward(std::unique_ptr<T>& u)
+pobu::owned_pointer<T> _forward(std::unique_ptr<T>& u)
 {
-  return pobu::ptr_owned_by_unique<T>(std::move(u));
+  return pobu::owned_pointer<T>(std::move(u));
 }
 
 template<typename T>
@@ -99,7 +99,7 @@ struct mock_func_param_deduction
   using result = typename std::conditional
   <
     type_info<typename func_signature<T>::result>::is_unique and swap,
-    pobu::ptr_owned_by_unique<
+    pobu::owned_pointer<
       typename type_info<typename func_signature<T>::result>::type
     >,
     typename func_signature<T>::result
@@ -109,7 +109,7 @@ struct mock_func_param_deduction
   using arg = typename std::conditional
   <
     type_info<typename func_signature<T>::template arg<i>>::is_unique and swap,
-    pobu::ptr_owned_by_unique<
+    pobu::owned_pointer<
       typename type_info<typename func_signature<T>::template arg<i>>::type
     >,
     typename func_signature<T>::template arg<i>

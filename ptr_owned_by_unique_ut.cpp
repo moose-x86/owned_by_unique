@@ -24,7 +24,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "ptr_owned_by_unique.hpp"
+#include "owned_pointer.hpp"
 #include "gmock_macros_for_unique_ptr.hpp"
 
 using namespace ::pobu;
@@ -61,7 +61,7 @@ protected:
 
   typedef StrictMock<destruction_test_mock> test_mock;
 
-  template<typename T> void assert_that_operators_throw(const ptr_owned_by_unique<T> &p)
+  template<typename T> void assert_that_operators_throw(const owned_pointer<T> &p)
   {
     ASSERT_TRUE(p.expired());
     ASSERT_THROW(*p, ptr_is_already_deleted);
@@ -69,7 +69,7 @@ protected:
     ASSERT_THROW(p.operator->(), ptr_is_already_deleted);
   }
 
-  template<typename T> void assert_that_operators_dont_throw(const ptr_owned_by_unique<T> &p)
+  template<typename T> void assert_that_operators_dont_throw(const owned_pointer<T> &p)
   {
     ASSERT_FALSE(p.expired());
     ASSERT_NO_THROW(*p);
@@ -77,13 +77,13 @@ protected:
     ASSERT_NO_THROW(p.operator->());
   }
 
-  template<typename T> void assert_that_get_unique_throws(const ptr_owned_by_unique<T> &p)
+  template<typename T> void assert_that_get_unique_throws(const owned_pointer<T> &p)
   {
     ASSERT_THROW(p.unique_ptr(), unique_ptr_already_acquired);
   }
 
   template<typename T>
-  std::unique_ptr<T> expect_that_get_unique_dont_throw(const ptr_owned_by_unique<T> &p)
+  std::unique_ptr<T> expect_that_get_unique_dont_throw(const owned_pointer<T> &p)
   {
     std::unique_ptr<T> u;
     EXPECT_NO_THROW(u = p.unique_ptr());
@@ -91,19 +91,19 @@ protected:
     return u;
   }
 
-  template<typename T> bool equal(const ptr_owned_by_unique<T> &p1, const ptr_owned_by_unique<T> &p2)
+  template<typename T> bool equal(const owned_pointer<T> &p1, const owned_pointer<T> &p2)
   {
     return (p1.get() == p2.get()) and (p1.acquired() == p2.acquired());
   }
 
-  void expect_object_will_be_deleted(const ptr_owned_by_unique<destruction_test_mock> p)
+  void expect_object_will_be_deleted(const owned_pointer<destruction_test_mock> p)
   {
     EXPECT_CALL(*p, die()).Times(1);
   }
 
-  void create_nine_copies_of(const ptr_owned_by_unique<destruction_test_mock> &p)
+  void create_nine_copies_of(const owned_pointer<destruction_test_mock> &p)
   {
-    static std::vector<ptr_owned_by_unique<destruction_test_mock>> copiesOfPointers;
+    static std::vector<owned_pointer<destruction_test_mock>> copiesOfPointers;
     copiesOfPointers = {p, p, p, p, p, p, p, p, p};
   }
 
@@ -113,12 +113,12 @@ protected:
     delete u.release();
   }
 
-  void test_link_semantics(ptr_owned_by_unique<simple_base_class> p)
+  void test_link_semantics(owned_pointer<simple_base_class> p)
   {
     ASSERT_TRUE(p.acquired());
   }
 
-  void test_move_semantics(ptr_owned_by_unique<test_mock> p)
+  void test_move_semantics(owned_pointer<test_mock> p)
   {
     ASSERT_FALSE(p.acquired());
   }
@@ -134,7 +134,7 @@ TEST_F(owned_by_unique_test_suite, isUniqueAndPtrOwnedPointingSameAddress)
 
 TEST_F(owned_by_unique_test_suite, testCreatingPtrOwnedByUniqueFromNullptr)
 {
-  ptr_owned_by_unique<int> p = nullptr;
+  owned_pointer<int> p = nullptr;
   auto u = expect_that_get_unique_dont_throw(p);
 
   ASSERT_EQ(u.get(), p.get());
@@ -167,7 +167,7 @@ TEST_F(owned_by_unique_test_suite, testMoveAndLinkSemantics)
   test_link_semantics(link<simple_base_class>(u));
   test_link_semantics(link(u));
 
-  const ptr_owned_by_unique<destruction_test_mock> r = link(u);
+  const owned_pointer<destruction_test_mock> r = link(u);
   ASSERT_TRUE(r.acquired());
 
   assert_that_operators_dont_throw(p);
@@ -181,7 +181,7 @@ TEST_F(owned_by_unique_test_suite, testMoveAndLinkSemantics)
 
 TEST_F(owned_by_unique_test_suite, deleteAfterCopyDontInvalidateCopy)
 {
-  ptr_owned_by_unique<destruction_test_mock> copy;
+  owned_pointer<destruction_test_mock> copy;
 
   {
     auto p = make_owned_by_unique<test_mock>();
@@ -243,7 +243,7 @@ TEST_F(owned_by_unique_test_suite, objectWillBeDeletedWhenMultipleSharedObjects)
 
 TEST_F(owned_by_unique_test_suite, forNullPointerInvokeUniquePtrHowManyYouWant)
 {
-  ptr_owned_by_unique<destruction_test_mock> p;
+  owned_pointer<destruction_test_mock> p;
 
   for(int i = 0; i < 100; i++)
   {
@@ -286,7 +286,7 @@ TEST_F(owned_by_unique_test_suite, noRuntimeErrorWhenResourceIsAquiredInUnique)
 
 TEST_F(owned_by_unique_test_suite, boolOperator)
 {
-  ptr_owned_by_unique<int> r;
+  owned_pointer<int> r;
   auto p = make_owned_by_unique<int>(12);
 
   ASSERT_FALSE(!p);
@@ -312,7 +312,7 @@ TEST_F(owned_by_unique_test_suite, isUniquePtrValidAfterOwnedPtrDeletion)
 TEST_F(owned_by_unique_test_suite, uniquePtrConstructor)
 {
   std::unique_ptr<destruction_test_mock> u(new test_mock());
-  ptr_owned_by_unique<destruction_test_mock> p(std::move(u));
+  owned_pointer<destruction_test_mock> p(std::move(u));
 
   ASSERT_FALSE(u.get());
   expect_object_will_be_deleted(p);
@@ -394,7 +394,7 @@ TEST_F(owned_by_unique_test_suite, assertThatSharedStateWillBeUpdateAfterPtrOwne
     u = p.unique_ptr();
   }
 
-  ptr_owned_by_unique<test_mock> p{std::move(u)};
+  owned_pointer<test_mock> p{std::move(u)};
   expect_object_will_be_deleted(p);
 
   p.unique_ptr().reset();

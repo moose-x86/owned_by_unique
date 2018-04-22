@@ -6,8 +6,8 @@ struct Foo{ virtual ~Foo() = default; };
 
 int main()
 {
-  auto p = pobu::make_owned_by_unique<Foo>();
-  auto r = pobu::make_owned_by_unique<int>();
+  auto p = pobu::make_owned<Foo>();
+  auto r = pobu::make_owned<int>();
   {
     std::unique_ptr<Foo> u{p};
     assert(p.get() == u.get());
