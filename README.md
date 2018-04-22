@@ -76,7 +76,10 @@ try
 {
   auto p = make_owned<T>();
   auto u = p.unique_ptr();
-  auto v = p.unique_ptr(); //this throws
+  if(!p.expired())
+  {
+    auto v = p.unique_ptr(); //this throws
+  }
 }
 catch(const unique_ptr_already_acquired&)
 {}
