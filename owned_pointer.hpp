@@ -75,25 +75,26 @@ protected:
   void delete_event() { if(auto p = weak_control_block.lock()) std::get<_deleted>(*p) = true; }
 };
 
-template<typename _base>
-struct destruction_notify_object : _base, shared_secret
+template<typename base>
+struct destruction_notify_object : base, shared_secret
 {
-  using _base::_base;
+  using base::base;
   ~destruction_notify_object() override { delete_event(); }
 };
 
-template<typename _Tp>
+template<typename T>
 class unique_ptr_link
 {
+private:
   unique_ptr_link(const unique_ptr_link&) = delete;
   unique_ptr_link& operator=(unique_ptr_link&&) = delete;
   unique_ptr_link& operator=(const unique_ptr_link&) = delete;
 
 public:
-  _Tp* const _ptr;
+  T* const _ptr;
 
-  template<typename T>
-  explicit unique_ptr_link(const std::unique_ptr<T>& u) : _ptr(u.get()) {}
+  template<typename R>
+  explicit unique_ptr_link(const std::unique_ptr<R>& u) : _ptr(u.get()) {}
 
   unique_ptr_link(unique_ptr_link&&) = default;
 };
@@ -112,16 +113,16 @@ struct ptr_is_already_deleted : public std::runtime_error
   {}
 };
 
-template<typename _Tp>
+template<typename Tp>
 class owned_pointer : private std::shared_ptr<detail::control_block>
 {
-  static_assert(not std::is_array<_Tp>::value, "owned_pointer doesn't support arrays");
+  static_assert(not std::is_array<Tp>::value, "owned_pointer doesn't support arrays");
 
   template <typename> friend class owned_pointer;
   using base = std::shared_ptr<detail::control_block>;
 
 public:
-  using element_type = _Tp;
+  using element_type = Tp;
   using unique_ptr_t = std::unique_ptr<element_type>;
   using base::use_count;
 
