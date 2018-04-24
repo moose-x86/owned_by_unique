@@ -469,18 +469,13 @@ TEST_F(owned_pointer_ut, testCastingAddressMovement)
   std::string ss;
   auto p = make_owned<A>(ss);
 
-  EXPECT_TRUE(std::addressof(*p) == p.get());
   EXPECT_CALL(a, _create(_)).WillOnce(Return(p));
-  EXPECT_CALL(gg, giveme(Ref(*p)));
+  EXPECT_CALL(gg, giveme(Ref(p.as<std::ostream>())));
   {
     I& i = a;
     G& g = gg;
 
-    auto u = i.create("test-test");
-
-    EXPECT_TRUE(p == u);
-    EXPECT_TRUE(p.get() == u.get());
-    EXPECT_TRUE(std::addressof(*p) == u.get());
+    std::unique_ptr<std::ostream> u = i.create("test-test");
     g.giveme(*u);
   }
 }
