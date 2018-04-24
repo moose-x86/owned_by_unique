@@ -241,7 +241,7 @@ public:
     return compare(p.get_pointer());
   }
 
-  template<typename T> T& ref() const
+  template<typename T> T& cast_to() const
   {
     return owned_pointer<T>{*this}.operator*();
   }
