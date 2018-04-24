@@ -241,7 +241,10 @@ public:
     return compare(p.get_pointer());
   }
 
-  template<typename T> T& as() { return owned_pointer<T>{*this}.operator*(); }
+  template<typename T> T& ref() const
+  {
+    return owned_pointer<T>{*this}.operator*();
+  }
 
 private:
   element_type* get_pointer() const noexcept
