@@ -51,7 +51,7 @@ constexpr static std::uint8_t _deleted = 2;
 using control_block = std::tuple<void*, bool, bool>;
 
 template<typename T>
-struct deleter
+struct owned_deleter
 {
   void operator()(control_block *const cb)
   {
@@ -59,10 +59,10 @@ struct deleter
     assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
     #endif
 
-    std::unique_ptr<control_block> u{cb};
+    if(not std::get<_acquired>(*cb))
+      delete static_cast<T*>(std::get<_ptr>(*cb));
 
-    if(not std::get<_acquired>(*u))
-      delete static_cast<T*>(std::get<_ptr>(*u));
+    delete cb;
   }
 };
 
@@ -91,9 +91,9 @@ struct unique_ptr_link
   unique_ptr_link& operator=(const unique_ptr_link&) = delete;
 
   template<typename R>
-  explicit unique_ptr_link(const std::unique_ptr<R>& u) : _ptr(u.get()) {}
+  explicit unique_ptr_link(const std::unique_ptr<R>& u) : passed_pointer(u.get()) {}
 
-  T* const _ptr;
+  T* const passed_pointer;
 };
 
 } // namespace detail
@@ -120,7 +120,7 @@ class owned_pointer : private std::shared_ptr<detail::control_block>
 
 public:
   using element_type = Tp;
-  using unique_ptr_t = std::unique_ptr<element_type>;
+  using upointer_type = std::unique_ptr<element_type>;
   using base::use_count;
 
   owned_pointer() noexcept = default;
@@ -129,85 +129,82 @@ public:
   template<typename T>
   owned_pointer(std::unique_ptr<T>&& p)
   {
-    if(!p) return;
+    if(not p) return;
 
     constexpr bool not_acquired = false;
-    *this = owned_pointer<T>(p.release(), not_acquired);
+    operator=(owned_pointer<T>(p.release(), not_acquired));
   }
 
   template<typename T>
   owned_pointer(detail::unique_ptr_link<T>&& p)
   {
-    if(!p._ptr) return;
+    if(not p.passed_pointer) return;
 
     constexpr bool is_acquired = true;
-    *this = owned_pointer<T>(p._ptr, is_acquired);
+    operator=(owned_pointer<T>(p.passed_pointer, is_acquired));
   }
 
   template<typename T>
-  owned_pointer(const owned_pointer<T>& p) noexcept
+  owned_pointer(const owned_pointer<T>& op) noexcept
   {
-    *this = p;
+    operator=(op);
   }
 
   template<typename T>
-  owned_pointer(owned_pointer<T>&& p) noexcept : base{std::move(p)}
+  owned_pointer(owned_pointer<T>&& op) noexcept : base{std::move(op)}
   {
-    static_assert(std::is_same   <element_type, T>::value or
-                  std::is_base_of<element_type, T>::value,
+    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
                   "Assigning pointer of different or non-derived type");
   }
 
   template<typename T>
-  owned_pointer& operator=(const owned_pointer<T>& pointee) noexcept
+  owned_pointer& operator=(const owned_pointer<T>& op) noexcept
   {
-    static_assert(std::is_same   <element_type, T>::value or
-                  std::is_base_of<element_type, T>::value,
+    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
                   "Assigning pointer of different or non-derived type");
 
-    base::operator=(pointee);
+    base::operator=(op);
     return *this;
   }
 
   template<typename T>
-  owned_pointer& operator=(owned_pointer<T>&& p) noexcept
+  owned_pointer& operator=(owned_pointer<T>&& op) noexcept
   {
-    static_assert(std::is_same   <element_type, T>::value or
-                  std::is_base_of<element_type, T>::value,
+    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
                   "Assigning pointer of different or non-derived type");
 
-    base::operator=(std::move(p));
+    base::operator=(std::move(op));
     return *this;
   }
 
   element_type* get() const
   {
-    throw_if_is_destroyed_and_has_virtual_dtor();
+    throw_when_ptr_expired_and_virtual_dtor_is_present();
     return get_pointer();
   }
 
   element_type* operator->() const
   {
-    throw_if_is_destroyed_and_has_virtual_dtor();
+    throw_when_ptr_expired_and_virtual_dtor_is_present();
     return get_pointer();
   }
 
   element_type& operator*() const
   {
-    throw_if_is_destroyed_and_has_virtual_dtor();
+    throw_when_ptr_expired_and_virtual_dtor_is_present();
     return *get_pointer();
   }
 
-  unique_ptr_t unique_ptr() const
+  upointer_type unique_ptr() const
   {
     if(get_pointer())
     {
       if(not acquired())
       {
         std::get<detail::_acquired>(base::operator*()) = true;
-        return unique_ptr_t{get_pointer()};
+        return upointer_type{get_pointer()};
       }
-      throw unique_ptr_already_acquired{};
+      throw unique_ptr_already_acquired();
     }
     return nullptr;
   }
@@ -222,7 +219,7 @@ public:
     return base::operator bool() and std::get<detail::_deleted>(base::operator*());
   }
 
-  explicit operator unique_ptr_t() const
+  explicit operator upointer_type() const
   {
     return unique_ptr();
   }
@@ -260,17 +257,17 @@ private:
     {
       base::reset(
         new detail::control_block(p, {}, {}),
-        detail::deleter<element_type>()
+        detail::owned_deleter<element_type>()
       );
       set_shared_secret_when_possible(ss);
     }
     std::get<detail::_acquired>(base::operator*()) = acquired;
   }
 
-  void throw_if_is_destroyed_and_has_virtual_dtor() const
+  void throw_when_ptr_expired_and_virtual_dtor_is_present() const
   {
     if(__builtin_expect(expired(), false))
-      throw ptr_is_already_deleted{};
+      throw ptr_is_already_deleted();
   }
 
   template<typename T>
@@ -294,7 +291,8 @@ private:
 
   void set_shared_secret_when_possible(detail::shared_secret *const p)
   {
-    if(p) p->weak_control_block = *this;
+    if(p != nullptr)
+      p->weak_control_block = *this;
   }
 };
 

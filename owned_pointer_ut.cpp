@@ -41,7 +41,6 @@ protected:
   struct destruction_test_mock : public simple_base_class
   {
     int x;
-
     destruction_test_mock(int y = 1) : x(y) {}
 
     MOCK_METHOD0(die, void());
