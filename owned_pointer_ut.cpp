@@ -477,6 +477,8 @@ TEST_F(owned_pointer_ut, testCastingAddressMovement)
     G& g = gg;
 
     auto u = i.create("aaa");
+
+    EXPECT_EQ(p.get(), u.get());
     g.giveme(*u);
   }
 }
