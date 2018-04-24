@@ -470,7 +470,7 @@ TEST_F(owned_pointer_ut, testCastingAddressMovement)
   auto p = make_owned<A>(ss);
 
   EXPECT_CALL(a, _create(_)).WillOnce(Return(p));
-  EXPECT_CALL(gg, giveme(Ref(p.ref<std::ostream>())));
+  EXPECT_CALL(gg, giveme(Ref(p.cast_to<std::ostream>())));
   {
     I& i = a;
     G& g = gg;
