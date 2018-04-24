@@ -55,7 +55,7 @@ struct deleter
 {
   void operator()(control_block *const cb)
   {
-    #ifdef OWNED_BY_UNIQUE_ASSERT_DTOR
+    #ifdef OWNED_POINTER_ASSERT_DTOR
     assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
     #endif
 
@@ -83,20 +83,17 @@ struct destruction_notify_object : base, shared_secret
 };
 
 template<typename T>
-class unique_ptr_link
+struct unique_ptr_link
 {
-private:
+  unique_ptr_link(unique_ptr_link&&) = default;
   unique_ptr_link(const unique_ptr_link&) = delete;
   unique_ptr_link& operator=(unique_ptr_link&&) = delete;
   unique_ptr_link& operator=(const unique_ptr_link&) = delete;
 
-public:
-  T* const _ptr;
-
   template<typename R>
   explicit unique_ptr_link(const std::unique_ptr<R>& u) : _ptr(u.get()) {}
 
-  unique_ptr_link(unique_ptr_link&&) = default;
+  T* const _ptr;
 };
 
 } // namespace detail
@@ -116,7 +113,7 @@ struct ptr_is_already_deleted : public std::runtime_error
 template<typename Tp>
 class owned_pointer : private std::shared_ptr<detail::control_block>
 {
-  static_assert(not std::is_array<Tp>::value, "owned_pointer doesn't support arrays");
+  static_assert(!std::is_array<Tp>::value, "owned_pointer doesn't support arrays");
 
   template <typename> friend class owned_pointer;
   using base = std::shared_ptr<detail::control_block>;
@@ -130,8 +127,10 @@ public:
   owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename T>
-  owned_pointer(std::unique_ptr<T> p)
+  owned_pointer(std::unique_ptr<T>&& p)
   {
+    if(!p) return;
+
     constexpr bool not_acquired = false;
     *this = owned_pointer<T>(p.release(), not_acquired);
   }
@@ -139,6 +138,8 @@ public:
   template<typename T>
   owned_pointer(detail::unique_ptr_link<T>&& p)
   {
+    if(!p._ptr) return;
+
     constexpr bool is_acquired = true;
     *this = owned_pointer<T>(p._ptr, is_acquired);
   }
