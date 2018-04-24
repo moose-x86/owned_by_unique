@@ -121,6 +121,33 @@ protected:
   {
     ASSERT_FALSE(p.acquired());
   }
+
+  struct A : std::stringstream
+  {
+    A(const std::string& a) : s(a) {}
+    const std::string& s;
+  };
+
+  struct I
+  {
+    virtual std::unique_ptr<std::ostream> create(const std::string&) = 0;
+    virtual ~I(){}
+  };
+
+  struct ff : I
+  {
+    MOCK_UNIQUE_METHOD1(create, std::unique_ptr<std::ostream>(const std::string&));
+  };
+
+  struct G
+  {
+    virtual void giveme(std::ostream&) = 0;
+  };
+
+  struct Giveme : G
+  {
+    MOCK_METHOD1(giveme, void(std::ostream&));
+  };
 };
 
 TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
@@ -433,4 +460,23 @@ TEST_F(owned_pointer_ut, assertThatMoveSemanticsIsWorking)
   ASSERT_EQ(p.get(), nullptr);
   ASSERT_EQ(p.acquired(), false);
   ASSERT_EQ(p.expired(), false);
+}
+
+TEST_F(owned_pointer_ut, testCastingAddressMovement)
+{
+  ff a;
+  Giveme gg;
+  std::string ss;
+  auto p = make_owned<A>(ss);
+
+  EXPECT_CALL(a, _create(_)).WillOnce(Return(p));
+  EXPECT_CALL(gg, giveme(Ref(*p)));
+
+  {
+    I& i = a;
+    G& g = gg;
+
+    auto u = i.create("aaa");
+    g.giveme(*u);
+  }
 }

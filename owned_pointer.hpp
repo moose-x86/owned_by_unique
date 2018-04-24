@@ -78,8 +78,8 @@ protected:
 template<typename base>
 struct destruction_notify_object : base, shared_secret
 {
-  using base::base;
-  ~destruction_notify_object() override { delete_event(); }
+   using base::base;
+   ~destruction_notify_object() override { delete_event(); }
 };
 
 template<typename T>
