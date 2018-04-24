@@ -123,8 +123,8 @@ public:
   using upointer_type = std::unique_ptr<element_type>;
   using base::use_count;
 
-  owned_pointer() noexcept = default;
-  owned_pointer(std::nullptr_t) noexcept {}
+  constexpr owned_pointer() noexcept = default;
+  constexpr owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename T>
   owned_pointer(std::unique_ptr<T>&& p)
@@ -241,9 +241,9 @@ public:
     return compare(p.get_pointer());
   }
 
-  template<typename T> T& cast_to() const
+  template<typename T = element_type> T& ref_as() const
   {
-    return owned_pointer<T>{*this}.operator*();
+    return *owned_pointer<T>(*this);
   }
 
 private:
