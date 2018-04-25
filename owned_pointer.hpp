@@ -439,5 +439,4 @@ owned_pointer<R> ptr_static_cast(const owned_pointer<T>& p)
    return owned_pointer<R>(p);
 }
 
-
 } //namespace pobu
