@@ -241,11 +241,6 @@ public:
     return compare(p.get_pointer());
   }
 
-  template<typename T = element_type> T& ref_as() const
-  {
-    return *owned_pointer<T>(*this);
-  }
-
 private:
   element_type* get_pointer() const noexcept
   {
@@ -437,5 +432,12 @@ inline bool operator!=(const std::unique_ptr<T1>& p1, const owned_pointer<T2>& p
 {
   return p2.compare(p1.get()) != 0;
 }
+
+template<typename R, typename T>
+owned_pointer<R> ptr_static_cast(const owned_pointer<T>& p)
+{
+   return owned_pointer<R>(p);
+}
+
 
 } //namespace pobu
