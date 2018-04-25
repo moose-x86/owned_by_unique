@@ -55,9 +55,9 @@ struct owned_deleter
 {
   void operator()(control_block *const cb)
   {
-    #ifdef OWNED_POINTER_ASSERT_DTOR
+#ifdef OWNED_POINTER_ASSERT_DTOR
     assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
-    #endif
+#endif
 
     if(not std::get<_acquired>(*cb))
       delete static_cast<T*>(std::get<_ptr>(*cb));
@@ -72,14 +72,20 @@ public:
   std::weak_ptr<control_block> weak_control_block;
   virtual ~shared_secret() = default;
 protected:
-  void delete_event() { if(auto p = weak_control_block.lock()) std::get<_deleted>(*p) = true; }
+  void delete_event()
+  {
+    if(auto p = weak_control_block.lock()) std::get<_deleted>(*p) = true;
+  }
 };
 
 template<typename base>
 struct destruction_notify_object : base, shared_secret
 {
    using base::base;
-   ~destruction_notify_object() override { delete_event(); }
+   ~destruction_notify_object() override
+   {
+     delete_event();
+   }
 };
 
 template<typename T>
@@ -436,7 +442,7 @@ inline bool operator!=(const std::unique_ptr<T1>& p1, const owned_pointer<T2>& p
 template<typename R, typename T>
 owned_pointer<R> ptr_static_cast(const owned_pointer<T>& p)
 {
-   return owned_pointer<R>(p);
+  return owned_pointer<R>(p);
 }
 
 } //namespace pobu
