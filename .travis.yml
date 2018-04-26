@@ -10,10 +10,10 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-7
+            - g++-5
       env:
-      - C_COMPILER=gcc-7
-      - CXX_COMPILER=g++-7
+      - C_COMPILER=gcc-5
+      - CXX_COMPILER=g++-5
     - compiler: clang
       addons:
         apt:
@@ -21,10 +21,10 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-5.0
           packages:
-            - clang-5.0
+            - clang-3.8
       env:
-      - C_COMPILER=clang-5.0
-      - CXX_COMPILER=clang++-5.0
+      - C_COMPILER=clang-3.8
+      - CXX_COMPILER=clang++-3.8
 
 # Build steps
 script:
