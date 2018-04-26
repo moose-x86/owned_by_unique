@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.2.2)
 project("owned_pointer" CXX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g")
 
 set(GMOCK_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/google-test/googlemock/include")
 set(GTEST_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/google-test/googletest/include")
+
+if("${BUILD_SHARED_LIBS}" STREQUAL "ON")
+  string(REPLACE "/MTd" "/MDd" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  string(REPLACE "/MT" "/MD" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+else()
+  string(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+endif()
 
 if(${WIN32})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D not=! /D and=&& /D or=||")
