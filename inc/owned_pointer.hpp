@@ -27,6 +27,7 @@
 #include <exception>
 #include <type_traits>
 #include <cassert>
+#include <tuple>
 
 namespace pobu
 {
