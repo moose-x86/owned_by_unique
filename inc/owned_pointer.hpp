@@ -57,10 +57,10 @@ struct owned_deleter
   void operator()(control_block *const cb)
   {
 #ifdef OWNED_POINTER_ASSERT_DTOR
-    assert((not std::get<_acquired>(*cb)) and "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
+    assert((!std::get<_acquired>(*cb)) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
 #endif
 
-    if(not std::get<_acquired>(*cb))
+    if(!std::get<_acquired>(*cb))
       delete static_cast<T*>(std::get<_ptr>(*cb));
 
     delete cb;
@@ -136,7 +136,7 @@ public:
   template<typename T>
   owned_pointer(std::unique_ptr<T>&& p)
   {
-    if(not p) return;
+    if(! p) return;
 
     constexpr bool not_acquired = false;
     operator=(owned_pointer<T>(p.release(), not_acquired));
@@ -145,7 +145,7 @@ public:
   template<typename T>
   owned_pointer(detail::unique_ptr_link<T>&& p)
   {
-    if(not p.passed_pointer) return;
+    if(! p.passed_pointer) return;
 
     constexpr bool is_acquired = true;
     operator=(owned_pointer<T>(p.passed_pointer, is_acquired));
@@ -206,7 +206,7 @@ public:
   {
     if(get_pointer())
     {
-      if(not acquired())
+      if(!acquired())
       {
         std::get<detail::_acquired>(base::operator*()) = true;
         return upointer_type{get_pointer()};
@@ -218,12 +218,12 @@ public:
 
   bool acquired() const noexcept
   {
-    return base::operator bool() and std::get<detail::_acquired>(base::operator*());
+    return base::operator bool() && std::get<detail::_acquired>(base::operator*());
   }
 
   bool expired() const noexcept
   {
-    return base::operator bool() and std::get<detail::_deleted>(base::operator*());
+    return base::operator bool() && std::get<detail::_deleted>(base::operator*());
   }
 
   explicit operator upointer_type() const
@@ -251,7 +251,7 @@ public:
 private:
   element_type* get_pointer() const noexcept
   {
-    if(__builtin_expect(base::operator bool(), true))
+    if(base::operator bool())
       return static_cast<element_type*>(std::get<detail::_ptr>(base::operator*()));
 
     return nullptr;
@@ -273,7 +273,7 @@ private:
 
   void throw_when_ptr_expired_and_virtual_dtor_is_present() const
   {
-    if(__builtin_expect(expired(), false))
+    if(expired())
       throw ptr_is_already_deleted();
   }
 
@@ -365,7 +365,7 @@ inline bool operator==(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2)
 template<typename T1, typename T2>
 inline bool operator!=(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
 {
-  return not(p1 == p2);
+  return !(p1 == p2);
 }
 
 template<typename T1, typename T2>
