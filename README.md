@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/moose-x86/owned_by_unique.svg?branch=master)] [![Build status](https://ci.appveyor.com/api/projects/status/drdof9ajfooqk0um/branch/master?svg=true)] [![codecov](https://codecov.io/gh/moose-x86/owned_by_unique/branch/master/graph/badge.svg)](https://codecov.io/gh/moose-x86/owned_by_unique)
+[![Build Status](https://travis-ci.org/moose-x86/owned_by_unique.svg?branch=master)](https://travis-ci.org/moose-x86/owned_by_unique) [![Build status](https://ci.appveyor.com/api/projects/status/drdof9ajfooqk0um?svg=true)](https://ci.appveyor.com/project/moose-x86/owned-by-unique) [![codecov](https://codecov.io/gh/moose-x86/owned_by_unique/branch/master/graph/badge.svg)](https://codecov.io/gh/moose-x86/owned_by_unique)
 
 # Class owned_pointer
 This is test utility for dependency injection with ```std::unique_ptr``` smart pointer, written in C++ 11.
