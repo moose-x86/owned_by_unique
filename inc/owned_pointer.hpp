@@ -34,7 +34,7 @@ namespace pobu
 
 namespace detail
 {
-template<typename> class unique_ptr_link;
+template<typename> struct unique_ptr_link;
 }
 
 template<typename T>
