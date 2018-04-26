@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/moose-x86/owned_by_unique.svg?branch=master)](https://travis-ci.org/moose-x86/owned_by_unique) [![Build status](https://ci.appveyor.com/api/projects/status/drdof9ajfooqk0um?svg=true)](https://ci.appveyor.com/project/moose-x86/owned-by-unique) [![codecov](https://codecov.io/gh/moose-x86/owned_by_unique/branch/master/graph/badge.svg)](https://codecov.io/gh/moose-x86/owned_by_unique)
 
-# Class owned_pointer
+# owned_pointer
 This is test utility for dependency injection with ```std::unique_ptr``` smart pointer, written in C++ 11.
 Class ```pobu::owned_pointer``` acts as facade to ```std::unique_ptr``` and has semantics and syntax of smart pointer.
 Class ```pobu::owned_pointer``` is not intended to be used in production code. It is best to use this class with google mock, to inject mock to cut(class under test)  by ```std::unique_ptr``` and have reference to this mock in test suite.
@@ -227,7 +227,7 @@ When ```pobu::owned_pointer``` is created and ```unique_ptr()``` is not invoked,
 
 ```c++
 #ifdef OWNED_POINTER_ASSERT_DTOR
-   assert(is_acquired() and
-           "owned_pointer: you created owned_pointer, but unique_ptr was never acquired");
+assert(acquired() and
+       "owned_pointer: you created owned_pointer, but unique_ptr was never acquired");
 #endif
 ```
