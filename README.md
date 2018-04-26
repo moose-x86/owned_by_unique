@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/moose-x86/owned_by_unique.svg?branch=master)] [![Build status](https://ci.appveyor.com/api/projects/status/drdof9ajfooqk0um/branch/master?svg=true)] [![codecov](https://codecov.io/gh/moose-x86/owned_by_unique/branch/master/graph/badge.svg)](https://codecov.io/gh/moose-x86/owned_by_unique)
+
 # Class owned_pointer
 This is test utility for dependency injection with ```std::unique_ptr``` smart pointer, written in C++ 11.
 Class ```pobu::owned_pointer``` acts as facade to ```std::unique_ptr``` and has semantics and syntax of smart pointer.

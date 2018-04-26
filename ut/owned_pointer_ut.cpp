@@ -122,29 +122,29 @@ protected:
     ASSERT_FALSE(p.acquired());
   }
 
-  struct A : std::stringstream
+  struct RefString : std::stringstream
   {
-    A(const std::string& a) : s(a) {}
+    RefString(const std::string& a) : s(a) {}
     const std::string& s;
   };
 
-  struct I
+  struct OStreamFactory
   {
     virtual std::unique_ptr<std::ostream> create(const std::string&) = 0;
-    virtual ~I(){}
+    virtual ~OStreamFactory(){}
   };
 
-  struct ff : I
+  struct OStreamFactoryMock : OStreamFactory
   {
     MOCK_UNIQUE_METHOD1(create, std::unique_ptr<std::ostream>(const std::string&));
   };
 
-  struct G
+  struct Taker
   {
     virtual void giveme(std::ostream&) = 0;
   };
 
-  struct Giveme : G
+  struct TakerMock : Taker
   {
     MOCK_METHOD1(giveme, void(std::ostream&));
   };
@@ -403,6 +403,8 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
 {
   auto p = pobu::make_owned<test_mock>();
   auto r = pobu::make_owned<int>();
+  const void* p_ptr = p.get();
+  const void* r_ptr = r.get();
   {
     expect_object_will_be_deleted(p);
     std::unique_ptr<test_mock> u{p};
@@ -421,10 +423,26 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
 
   ASSERT_EQ(p, p);
   ASSERT_NE(p, r);
-  ASSERT_TRUE(p < r);
-  ASSERT_TRUE(p <= r);
-  ASSERT_FALSE(p > r);
-  ASSERT_FALSE(p >= r);
+
+  if(p_ptr < r_ptr)
+    ASSERT_TRUE(p < r);
+  else
+    ASSERT_FALSE(p < r);
+
+  if(p_ptr <= r_ptr)
+    ASSERT_TRUE(p <= r);
+  else
+    ASSERT_FALSE(p <= r);
+
+  if(p_ptr > r_ptr)
+    ASSERT_TRUE(p > r);
+  else
+    ASSERT_FALSE(p > r);
+
+  if(p_ptr >= r_ptr)
+    ASSERT_TRUE(p >= r);
+  else
+    ASSERT_FALSE(p >= r);
 }
 
 TEST_F(owned_pointer_ut, assertThatSharedStateWillBeUpdateAfterPtrOwnedDeletion)
@@ -464,18 +482,18 @@ TEST_F(owned_pointer_ut, assertThatMoveSemanticsIsWorking)
 
 TEST_F(owned_pointer_ut, testCastingAddressMovement)
 {
-  ff a;
-  Giveme gg;
+  OStreamFactoryMock ostream_factory;
+  TakerMock taker;
   std::string ss;
-  owned_pointer<std::ostream> p = make_owned<A>(ss);
+  owned_pointer<std::ostream> p = make_owned<RefString>(ss);
 
-  EXPECT_CALL(a, _create(_)).WillOnce(Return(p));
-  EXPECT_CALL(gg, giveme(Ref(*p)));
+  EXPECT_CALL(ostream_factory, _create(_)).WillOnce(Return(p));
+  EXPECT_CALL(taker, giveme(Ref(*p)));
   {
-    I& i = a;
-    G& g = gg;
+    OStreamFactory& osf = ostream_factory;
+    Taker& take = taker;
 
-    std::unique_ptr<std::ostream> u = i.create("test-test");
-    g.giveme(*u);
+    auto u = osf.create("test-test");
+    take.giveme(*u);
   }
 }
