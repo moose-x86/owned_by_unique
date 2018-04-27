@@ -423,6 +423,10 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
   ASSERT_TRUE(nullptr != p);
   ASSERT_FALSE(p == nullptr);
   ASSERT_FALSE(nullptr == p);
+  ASSERT_TRUE(p == p_ptr);
+  ASSERT_TRUE(p_ptr == p);
+  ASSERT_TRUE(p != r_ptr);
+  ASSERT_TRUE(r_ptr != p);
 
   if(p_ptr < r_ptr)
     ASSERT_TRUE(p < r);
