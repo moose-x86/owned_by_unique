@@ -1,4 +1,4 @@
-#include "owned_pointer.hpp"
+#include "../inc/owned_pointer.hpp"
 #include <iostream>
 #include <cassert>
 #include <algorithm>
@@ -12,21 +12,23 @@ struct Foo
 
 int main()
 {
+  using namespace ::std;
   using namespace ::pobu;
 
-  std::vector<std::unique_ptr<Foo>> u;
-  std::vector<owned_pointer<Foo>> v(10);
-  std::generate(v.begin(), v.end(), [](){ return pobu::make_owned<Foo>(); });
+  std::vector<unique_ptr<Foo>> u;
+  std::vector<owned_pointer<Foo>> v(15);
 
+  std::generate(v.begin(), v.end(), [](){ return make_owned<Foo>(); });
   std::cout << "---------------------------\n";
 
-  for(int i = 0; i < v.size(); i += 2)
-  {
-    u.push_back( v[i].unique_ptr() );
-  }
+  for(auto& e : v)
+    u.push_back(e.unique_ptr());
 
   u.clear();
 
-  v.erase(std::remove_if(v.begin(), v.end(), [](auto& p) { return p.expired(); }), v.end());
+  v.erase(
+      std::remove_if(v.begin(), v.end(), [](const auto& p) { return p.expired(); }),
+      v.end()
+  );
   std::cout << "---------------------------\n";
 }

@@ -160,10 +160,10 @@ TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
 
 TEST_F(owned_pointer_ut, testCreatingPtrOwnedByDefaultCtor)
 {
-  owned_pointer<int> p{};
+  owned_pointer<int> p;
   auto u = expect_that_get_unique_dont_throw(p);
 
-  ASSERT_EQ(p.get(), nullptr);
+  ASSERT_THAT(p, IsNull());
   ASSERT_EQ(u.get(), p.get());
   ASSERT_TRUE(not u);
   ASSERT_TRUE(not p);
@@ -176,7 +176,7 @@ TEST_F(owned_pointer_ut, testCreatingPtrOwnedByUniqueFromNullptr)
   owned_pointer<int> p = nullptr;
   auto u = expect_that_get_unique_dont_throw(p);
 
-  ASSERT_EQ(p.get(), nullptr);
+  ASSERT_THAT(p, IsNull());
   ASSERT_EQ(u.get(), p.get());
   ASSERT_TRUE(not u);
   ASSERT_TRUE(not p);
@@ -297,9 +297,9 @@ TEST_F(owned_pointer_ut, forNullPointerInvokeUniquePtrHowManyYouWant)
 TEST_F(owned_pointer_ut, runtimeErrorIsThrownWhenResourceDeleted)
 {
   const auto p = make_owned<test_mock>();
-  create_nine_copies_of(p);
-
   const auto r = p;
+
+  create_nine_copies_of(p);
 
   expect_object_will_be_deleted(p);
   {
@@ -408,21 +408,21 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
   {
     expect_object_will_be_deleted(p);
     std::unique_ptr<test_mock> u{p};
+
+    ASSERT_TRUE(p == u);
+    ASSERT_TRUE(u == p);
+    ASSERT_FALSE(p != u);
+    ASSERT_FALSE(u != p);
   }
 
   assert_that_operators_throw(p);
 
-  ASSERT_NO_THROW(p == p);
-  ASSERT_NO_THROW(p != r);
-  ASSERT_NO_THROW(p == nullptr);
-  ASSERT_NO_THROW(p != nullptr);
-  ASSERT_NO_THROW(p < r);
-  ASSERT_NO_THROW(p > r);
-  ASSERT_NO_THROW(p <= r);
-  ASSERT_NO_THROW(p >= r);
-
   ASSERT_EQ(p, p);
   ASSERT_NE(p, r);
+  ASSERT_TRUE(p != nullptr);
+  ASSERT_TRUE(nullptr != p);
+  ASSERT_FALSE(p == nullptr);
+  ASSERT_FALSE(nullptr == p);
 
   if(p_ptr < r_ptr)
     ASSERT_TRUE(p < r);
@@ -456,7 +456,7 @@ TEST_F(owned_pointer_ut, assertThatSharedStateWillBeUpdateAfterPtrOwnedDeletion)
   owned_pointer<test_mock> p{std::move(u)};
   expect_object_will_be_deleted(p);
 
-  p.unique_ptr().reset();
+  p.unique_ptr();
   assert_that_operators_throw(p);
 }
 
@@ -466,7 +466,8 @@ TEST_F(owned_pointer_ut, assertThatMoveSemanticsIsWorking)
   owned_pointer<test_mock> r{std::move(p)};
   expect_object_will_be_deleted(r);
 
-  ASSERT_NE(r.get(), nullptr);
+  ASSERT_THAT(p, IsNull());
+  ASSERT_THAT(r, NotNull());
   ASSERT_EQ(r.acquired(), false);
   ASSERT_EQ(r.expired(), false);
 
@@ -475,7 +476,7 @@ TEST_F(owned_pointer_ut, assertThatMoveSemanticsIsWorking)
   ASSERT_EQ(r.acquired(), true);
   ASSERT_EQ(r.expired(), true);
 
-  ASSERT_EQ(p.get(), nullptr);
+  ASSERT_THAT(p, IsNull());
   ASSERT_EQ(p.acquired(), false);
   ASSERT_EQ(p.expired(), false);
 }

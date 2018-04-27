@@ -136,7 +136,7 @@ public:
   template<typename T>
   owned_pointer(std::unique_ptr<T>&& p)
   {
-    if(! p) return;
+    if(!p) return;
 
     constexpr bool not_acquired = false;
     operator=(owned_pointer<T>(p.release(), not_acquired));
@@ -145,7 +145,7 @@ public:
   template<typename T>
   owned_pointer(detail::unique_ptr_link<T>&& p)
   {
-    if(! p.passed_pointer) return;
+    if(!p.passed_pointer) return;
 
     constexpr bool is_acquired = true;
     operator=(owned_pointer<T>(p.passed_pointer, is_acquired));
@@ -158,10 +158,9 @@ public:
   }
 
   template<typename T>
-  owned_pointer(owned_pointer<T>&& op) noexcept : base{std::move(op)}
+  owned_pointer(owned_pointer<T>&& op) noexcept
   {
-    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
-                  "Assigning pointer of different or non-derived type");
+    operator=(std::move(op));
   }
 
   template<typename T>
@@ -202,9 +201,9 @@ public:
     return *get_pointer();
   }
 
-  upointer_type unique_ptr() const
+  upointer_type unique_ptr()
   {
-    if(get_pointer())
+    if(get_pointer() != nullptr)
     {
       if(!acquired())
       {
@@ -226,7 +225,7 @@ public:
     return base::operator bool() && std::get<detail::_deleted>(base::operator*());
   }
 
-  explicit operator upointer_type() const
+  explicit operator upointer_type()
   {
     return unique_ptr();
   }
