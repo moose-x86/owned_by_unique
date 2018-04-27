@@ -60,7 +60,7 @@ protected:
 
   typedef StrictMock<destruction_test_mock> test_mock;
 
-  template<typename T> void assert_that_operators_throw(const owned_pointer<T> &p)
+  template<typename T> void assert_that_operators_throw(owned_pointer<T> &p)
   {
     ASSERT_TRUE(p.expired());
     ASSERT_THROW(*p, ptr_is_already_deleted);
@@ -68,7 +68,7 @@ protected:
     ASSERT_THROW(p.operator->(), ptr_is_already_deleted);
   }
 
-  template<typename T> void assert_that_operators_dont_throw(const owned_pointer<T> &p)
+  template<typename T> void assert_that_operators_dont_throw(owned_pointer<T> &p)
   {
     ASSERT_FALSE(p.expired());
     ASSERT_NO_THROW(*p);
@@ -76,13 +76,13 @@ protected:
     ASSERT_NO_THROW(p.operator->());
   }
 
-  template<typename T> void assert_that_get_unique_throws(const owned_pointer<T> &p)
+  template<typename T> void assert_that_get_unique_throws(owned_pointer<T> &p)
   {
     ASSERT_THROW(p.unique_ptr(), unique_ptr_already_acquired);
   }
 
   template<typename T>
-  std::unique_ptr<T> expect_that_get_unique_dont_throw(const owned_pointer<T> &p)
+  std::unique_ptr<T> expect_that_get_unique_dont_throw(owned_pointer<T> &p)
   {
     std::unique_ptr<T> u;
     EXPECT_NO_THROW(u = p.unique_ptr());
@@ -90,12 +90,12 @@ protected:
     return u;
   }
 
-  template<typename T> bool equal(const owned_pointer<T>& p1, const owned_pointer<T>& p2)
+  template<typename T> bool equal(owned_pointer<T>& p1, owned_pointer<T>& p2)
   {
     return (p1 == p2) and (p1.acquired() == p2.acquired()) and (p1.expired() == p2.expired());
   }
 
-  void expect_object_will_be_deleted(const owned_pointer<destruction_test_mock> p)
+  void expect_object_will_be_deleted(owned_pointer<destruction_test_mock> p)
   {
     EXPECT_CALL(*p, die()).Times(1);
   }
@@ -209,7 +209,7 @@ TEST_F(owned_pointer_ut, testMoveAndLinkSemantics)
   test_link_semantics(link<simple_base_class>(u));
   test_link_semantics(link(u));
 
-  const owned_pointer<destruction_test_mock> r = link(u);
+  owned_pointer<destruction_test_mock> r = link(u);
   ASSERT_TRUE(r.acquired());
 
   assert_that_operators_dont_throw(p);
@@ -296,8 +296,8 @@ TEST_F(owned_pointer_ut, forNullPointerInvokeUniquePtrHowManyYouWant)
 
 TEST_F(owned_pointer_ut, runtimeErrorIsThrownWhenResourceDeleted)
 {
-  const auto p = make_owned<test_mock>();
-  const auto r = p;
+  auto p = make_owned<test_mock>();
+  auto r = p;
 
   create_nine_copies_of(p);
 
@@ -308,7 +308,7 @@ TEST_F(owned_pointer_ut, runtimeErrorIsThrownWhenResourceDeleted)
 
   assert_that_operators_throw(p);
 
-  const auto w = p;
+  auto w = p;
 
   assert_that_operators_throw(w);
   assert_that_operators_throw(r);
@@ -316,8 +316,8 @@ TEST_F(owned_pointer_ut, runtimeErrorIsThrownWhenResourceDeleted)
 
 TEST_F(owned_pointer_ut, noRuntimeErrorWhenResourceIsAquiredInUnique)
 {
-  const auto p = make_owned<test_mock>(12324);
-  const auto u = p.unique_ptr();
+  auto p = make_owned<test_mock>(12324);
+  auto u = p.unique_ptr();
 
   expect_object_will_be_deleted(p);
 
@@ -361,7 +361,7 @@ TEST_F(owned_pointer_ut, uniquePtrConstructor)
 
 TEST_F(owned_pointer_ut, explicitOperatorTest)
 {
-  const auto p = make_owned<int>();
+  auto p = make_owned<int>();
   const std::unique_ptr<int> u(p);
 
   ASSERT_TRUE(u.get());
@@ -372,7 +372,7 @@ TEST_F(owned_pointer_ut, testConversionInGoogleMockParams)
 {
   mock_class m;
   mock_interface& base = m;
-  const auto p = make_owned<test_mock>();
+  auto p = make_owned<test_mock>();
 
   expect_object_will_be_deleted(p);
   EXPECT_CALL(m, _test(Eq(p))).WillOnce(Return(0));
@@ -385,7 +385,7 @@ TEST_F(owned_pointer_ut, testIsNullAndNotNullMatchers)
 {
   mock_class m;
   mock_interface& base = m;
-  const auto p = make_owned<test_mock>(0x123);
+  auto p = make_owned<test_mock>(0x123);
 
   EXPECT_CALL(m, _test(NotNull())).WillOnce(Return(0));
   expect_object_will_be_deleted(p);
