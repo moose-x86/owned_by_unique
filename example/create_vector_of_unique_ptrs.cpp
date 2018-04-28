@@ -16,7 +16,7 @@ int main()
   using namespace ::pobu;
 
   std::vector<unique_ptr<Foo>> u;
-  std::vector<owned_pointer<Foo>> v(15);
+  std::vector<owned_pointer<Foo>> v(15, nullptr);
 
   std::generate(v.begin(), v.end(), [](){ return make_owned<Foo>(); });
   std::cout << "---------------------------\n";
