@@ -201,7 +201,7 @@ public:
     return *get_pointer();
   }
 
-  upointer_type unique_ptr()
+  upointer_type unique_ptr() const
   {
     if(get_pointer() != nullptr)
     {
@@ -225,7 +225,7 @@ public:
     return base::operator bool() && std::get<detail::_deleted>(base::operator*());
   }
 
-  explicit operator upointer_type()
+  explicit operator upointer_type() const
   {
     return unique_ptr();
   }
