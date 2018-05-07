@@ -32,18 +32,18 @@
 namespace pobu
 {
 
-namespace detail
+namespace __priv
 {
 template<typename> struct unique_ptr_link;
 }
 
 template<typename T>
-detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept;
+__priv::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept;
 
 template<typename R, typename T>
-detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
+__priv::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
 
-namespace detail
+namespace __priv
 {
 constexpr static std::uint8_t _ptr = 0;
 constexpr static std::uint8_t _acquired = 1;
@@ -103,7 +103,7 @@ struct unique_ptr_link
   T* const passed_pointer;
 };
 
-} // namespace detail
+} // namespace __priv
 
 struct unique_ptr_already_acquired : public std::runtime_error
 {
@@ -118,12 +118,12 @@ struct ptr_is_already_deleted : public std::runtime_error
 };
 
 template<typename Tp>
-class owned_pointer : private std::shared_ptr<detail::control_block>
+class owned_pointer : private std::shared_ptr<__priv::control_block>
 {
   static_assert(!std::is_array<Tp>::value, "owned_pointer doesn't support arrays");
 
   template <typename> friend class owned_pointer;
-  using base = std::shared_ptr<detail::control_block>;
+  using base = std::shared_ptr<__priv::control_block>;
 
 public:
   using element_type = Tp;
@@ -143,7 +143,7 @@ public:
   }
 
   template<typename T>
-  owned_pointer(detail::unique_ptr_link<T>&& p)
+  owned_pointer(__priv::unique_ptr_link<T>&& p)
   {
     if(!p.passed_pointer) return;
 
@@ -166,8 +166,7 @@ public:
   template<typename T>
   owned_pointer& operator=(const owned_pointer<T>& op) noexcept
   {
-    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
-                  "Assigning pointer of different or non-derived type");
+    static_assert(std::is_convertible<T*, element_type*>::value, "Assigning pointer of different or non-derived type");
 
     base::operator=(op);
     return *this;
@@ -176,8 +175,7 @@ public:
   template<typename T>
   owned_pointer& operator=(owned_pointer<T>&& op) noexcept
   {
-    static_assert(std::is_same<element_type,T>::value or std::is_base_of<element_type,T>::value,
-                  "Assigning pointer of different or non-derived type");
+    static_assert(std::is_convertible<T*, element_type*>::value, "Assigning pointer of different or non-derived type");
 
     base::operator=(std::move(op));
     return *this;
@@ -207,7 +205,7 @@ public:
     {
       if(!acquired())
       {
-        std::get<detail::_acquired>(base::operator*()) = true;
+        std::get<__priv::_acquired>(base::operator*()) = true;
         return upointer_type{get_pointer()};
       }
       throw unique_ptr_already_acquired();
@@ -217,12 +215,12 @@ public:
 
   bool acquired() const noexcept
   {
-    return base::operator bool() && std::get<detail::_acquired>(base::operator*());
+    return base::operator bool() && std::get<__priv::_acquired>(base::operator*());
   }
 
   bool expired() const noexcept
   {
-    return base::operator bool() && std::get<detail::_deleted>(base::operator*());
+    return base::operator bool() && std::get<__priv::_deleted>(base::operator*());
   }
 
   explicit operator upointer_type() const
@@ -251,7 +249,7 @@ private:
   element_type* get_pointer() const noexcept
   {
     if(base::operator bool())
-      return static_cast<element_type*>(std::get<detail::_ptr>(base::operator*()));
+      return static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*()));
 
     return nullptr;
   }
@@ -262,12 +260,12 @@ private:
     if(!base::operator bool())
     {
       base::reset(
-        new detail::control_block(p, {}, {}),
-        detail::owned_deleter<element_type>()
+        new __priv::control_block(p, {}, {}),
+        __priv::owned_deleter<element_type>()
       );
       set_shared_secret_when_possible(ss);
     }
-    std::get<detail::_acquired>(base::operator*()) = acquired;
+    std::get<__priv::_acquired>(base::operator*()) = acquired;
   }
 
   void throw_when_ptr_expired_and_virtual_dtor_is_present() const
@@ -277,10 +275,10 @@ private:
   }
 
   template<typename T>
-  typename std::enable_if<std::is_polymorphic<T>::value, detail::shared_secret*>::type
+  typename std::enable_if<std::is_polymorphic<T>::value, __priv::shared_secret*>::type
   get_secret_when_possible(T *const p) noexcept
   {
-    if(auto ss = dynamic_cast<detail::shared_secret*>(p))
+    if(auto ss = dynamic_cast<__priv::shared_secret*>(p))
     {
       base::operator=(ss->weak_control_block.lock());
       return ss;
@@ -289,13 +287,13 @@ private:
   }
 
   template<typename T>
-  typename std::enable_if<!std::is_polymorphic<T>::value, detail::shared_secret*>::type
+  typename std::enable_if<!std::is_polymorphic<T>::value, __priv::shared_secret*>::type
   get_secret_when_possible(T *const p) noexcept
   {
     return nullptr;
   }
 
-  void set_shared_secret_when_possible(detail::shared_secret *const p)
+  void set_shared_secret_when_possible(__priv::shared_secret *const p)
   {
     if(p != nullptr)
       p->weak_control_block = *this;
@@ -306,13 +304,12 @@ template<> struct owned_pointer<void>{};
 
 template<typename T, typename... Args>
 inline typename std::enable_if<
-  !std::is_array<T>::value,
-  owned_pointer<T>
+  !std::is_array<T>::value and !std::is_pointer<T>::value, owned_pointer<T>
 >::type make_owned(Args&&... args)
 {
   using ptr_type = typename std::conditional<
     std::has_virtual_destructor<T>::value,
-    detail::destruction_notify_object<T>,
+    __priv::destruction_notify_object<T>,
     T
   >::type;
 
@@ -320,15 +317,15 @@ inline typename std::enable_if<
 }
 
 template<typename T>
-detail::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept
+__priv::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept
 {
-  return detail::unique_ptr_link<T>(u);
+  return __priv::unique_ptr_link<T>(u);
 }
 
 template<typename R, typename T>
-detail::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept
+__priv::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept
 {
-  return detail::unique_ptr_link<R>(u);
+  return __priv::unique_ptr_link<R>(u);
 }
 
 template<typename T1>
