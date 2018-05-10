@@ -34,20 +34,20 @@ namespace pobu
 
 namespace __priv
 {
-template<typename> struct unique_ptr_link;
+template<typename> struct uptr_link;
 }
 
 template<typename T>
-__priv::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept;
+__priv::uptr_link<T> link(const std::unique_ptr<T>& u) noexcept;
 
 template<typename R, typename T>
-__priv::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
+__priv::uptr_link<R> link(const std::unique_ptr<T>& u) noexcept;
 
 namespace __priv
 {
-constexpr static std::uint8_t _ptr = 0;
-constexpr static std::uint8_t _acquired = 1;
-constexpr static std::uint8_t _deleted = 2;
+constexpr const std::uint8_t _ptr = 0;
+constexpr const std::uint8_t _acquired = 1;
+constexpr const std::uint8_t _deleted = 2;
 
 using control_block = std::tuple<void*, bool, bool>;
 
@@ -90,15 +90,15 @@ struct destruction_notify_object : base, shared_secret
 };
 
 template<typename T>
-struct unique_ptr_link
+struct uptr_link
 {
-  unique_ptr_link(unique_ptr_link&&) = default;
-  unique_ptr_link(const unique_ptr_link&) = delete;
-  unique_ptr_link& operator=(unique_ptr_link&&) = delete;
-  unique_ptr_link& operator=(const unique_ptr_link&) = delete;
+  uptr_link(uptr_link&&) = default;
+  uptr_link(const uptr_link&) = delete;
+  uptr_link& operator=(uptr_link&&) = delete;
+  uptr_link& operator=(const uptr_link&) = delete;
 
   template<typename R>
-  explicit unique_ptr_link(const std::unique_ptr<R>& u) : passed_pointer(u.get()) {}
+  explicit uptr_link(const std::unique_ptr<R>& u) noexcept : passed_pointer(u.get()) {}
 
   T* const passed_pointer;
 };
@@ -120,7 +120,9 @@ struct ptr_is_already_deleted : public std::runtime_error
 template<typename Tp>
 class owned_pointer : private std::shared_ptr<__priv::control_block>
 {
-  static_assert(!std::is_array<Tp>::value, "owned_pointer doesn't support arrays");
+  static_assert(!std::is_array<Tp>::value &&
+                !std::is_pointer<Tp>::value,
+                "no array nor pointer supported");
 
   template <typename> friend class owned_pointer;
   using base = std::shared_ptr<__priv::control_block>;
@@ -143,7 +145,7 @@ public:
   }
 
   template<typename T>
-  owned_pointer(__priv::unique_ptr_link<T>&& p)
+  owned_pointer(__priv::uptr_link<T>&& p)
   {
     if(!p.passed_pointer) return;
 
@@ -303,9 +305,7 @@ private:
 template<> struct owned_pointer<void>{};
 
 template<typename T, typename... Args>
-inline typename std::enable_if<
-  !std::is_array<T>::value and !std::is_pointer<T>::value, owned_pointer<T>
->::type make_owned(Args&&... args)
+inline owned_pointer<T> make_owned(Args&&... args)
 {
   using ptr_type = typename std::conditional<
     std::has_virtual_destructor<T>::value,
@@ -317,15 +317,15 @@ inline typename std::enable_if<
 }
 
 template<typename T>
-__priv::unique_ptr_link<T> link(const std::unique_ptr<T>& u) noexcept
+__priv::uptr_link<T> link(const std::unique_ptr<T>& u) noexcept
 {
-  return __priv::unique_ptr_link<T>(u);
+  return __priv::uptr_link<T>(u);
 }
 
 template<typename R, typename T>
-__priv::unique_ptr_link<R> link(const std::unique_ptr<T>& u) noexcept
+__priv::uptr_link<R> link(const std::unique_ptr<T>& u) noexcept
 {
-  return __priv::unique_ptr_link<R>(u);
+  return __priv::uptr_link<R>(u);
 }
 
 template<typename T1>

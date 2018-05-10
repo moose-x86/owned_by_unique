@@ -25,9 +25,7 @@ struct X
 Using ```pobu::owned_pointer```:
 
 ```c++
-using namespace pobu;
-
-owned_pointer<T> p = make_owned<T>(1, 2, 3);
+pobu::owned_pointer<T> p = pobu::make_owned<T>(1, 2, 3);
 X x{p.unique_ptr()}; //after this point owned_pointer is not owner of memory
 
 x.u->x = 10;
@@ -37,11 +35,10 @@ assert(x.u->x == p->x);
 Class ```pobu::owned_pointer``` is not owner of memory after ```unique_ptr()``` invokation.
 
 ```c++
-using namespace pobu;
 
 std::unique_ptr<T> u;
 {
-  auto p = make_owned<T>();
+  auto p = pobu::make_owned<T>();
   u = p.unique_ptr();
 }
 auto naked_ptr = u.get(); //u is still valid after destruction of p
@@ -55,15 +52,13 @@ struct D
   virtual ~D() = default;
 };
 
-using namespace pobu;
-
 try
 {
-  auto p = make_owned<D>();
+  auto p = pobu::make_owned<D>();
   { auto u = p.unique_ptr(); } //nested scope, u deleted
   p->x = 10; // this throws, for T type this would be undefined
 }
-catch(const ptr_was_alredy_deleted&)
+catch(const pobu::ptr_was_alredy_deleted&)
 {}
 
 ```
@@ -72,27 +67,24 @@ Smart pointer ```pobu::owned_pointer``` behaves like ```std::shared_ptr``` if me
 You can invoke ```unique_ptr()``` only once if ```pobu::owned_pointer``` was in charge of valid memory or infinite number of times if ```pobu::owned_pointer``` was pointing to nullptr.
 
 ```c++
-using namespace pobu;
 
 try
 {
-  auto p = make_owned<T>();
+  auto p = pobu::make_owned<T>();
   auto u = p.unique_ptr();
-  if(!p.expired())
-  {
+
+  if(not p.expired()) //check if u deleted pointer
     auto v = p.unique_ptr(); //this throws
-  }
 }
-catch(const unique_ptr_already_acquired&)
+catch(const pobu::unique_ptr_already_acquired&)
 {}
 ```
 You can also create ```pobu::owned_pointer``` from valid ```std::unique_ptr```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
 
 ```c++
-using namespace pobu;
 
-auto u = std::make_unique<T>();
-owned_pointer<T> p{link(u)};
+auto u = std::make_unique<T>(1, 2, 3);
+pobu::owned_pointer<T> p{pobu::link(u)};
 
 assert(p.get() == u.get());
 auto v = p.unique_ptr(); //this will throw
@@ -100,10 +92,9 @@ auto v = p.unique_ptr(); //this will throw
 Also you can move ```std::unique_ptr``` to ```pobu::owned_pointer```. Please note that detecting of ```std::unique_ptr``` deletion will not work.
 
 ```c++
-using namespace pobu;
 
 auto u = std::make_unique<T>();
-owned_pointer<T> p{std::move(u)};
+pobu::owned_pointer<T> p{std::move(u)};
 
 assert(u.get() == nullptr);
 assert(p.get() != nullptr);
@@ -112,18 +103,29 @@ u = p.unique_ptr(); // this will not throw
 Smart pointer ```pobu::owned_pointer``` can be copied after acquirng ```std::unique_ptr```.
 
 ```c++
-using namespace pobu;
 
-auto p = make_owned<D>();
+auto p = pobu::make_owned<D>();
 auto u = p.unique_ptr();
 auto r = p;
-auto v = r.unique_ptr(); //this throws
 
-assert(p.get() == r.get());
+try
+{
+  auto v = r.unique_ptr(); //this throws
+}catch(...){}
+
+assert(p == r);
 u.reset();
+assert(p == r); //this will not throw - compare operators are noexcept
 
-auto x = p.get(); //this throws
-auto y = r.get(); //this throws
+try
+{
+  auto x = p.get(); //this throws
+}catch(...){}
+
+try
+{
+  auto y = r.get(); //this throws
+}catch(...){}
 ```
 
 This code was tested with g++ and clang++ compilers.
@@ -152,10 +154,9 @@ private:
 
 TEST(test_cut, test)
 {
-  using namespace pobu;
   using namespace testing;
 
-  owned_pointer<predicate_mock> p = make_owned<StrictMock<predicate_mock>>();
+  pobu::owned_pointer<predicate_mock> p = pobu::make_owned<StrictMock<predicate_mock>>();
   cut s{p.unique_ptr()};
 
   EXPECT_CALL(*p, is_true()).WillOnce(Return(true));
