@@ -75,7 +75,7 @@ public:
 protected:
   void delete_event()
   {
-    if(auto p = weak_control_block.lock()) std::get<_deleted>(*p) = true;
+    if(const auto& p = weak_control_block.lock()) std::get<_deleted>(*p) = true;
   }
 };
 
@@ -191,14 +191,12 @@ public:
 
   element_type* operator->() const
   {
-    throw_when_ptr_expired_and_virtual_dtor_is_present();
-    return get_pointer();
+    return get();
   }
 
   element_type& operator*() const
   {
-    throw_when_ptr_expired_and_virtual_dtor_is_present();
-    return *get_pointer();
+    return *get();
   }
 
   upointer_type unique_ptr() const
@@ -328,110 +326,110 @@ __priv::uptr_link<R> link(const std::unique_ptr<T>& u) noexcept
   return __priv::uptr_link<R>(u);
 }
 
-template<typename T1>
-inline bool operator==(const owned_pointer<T1>& p1, std::nullptr_t) noexcept
+template<typename A>
+inline bool operator==(const owned_pointer<A>& p1, std::nullptr_t) noexcept
 {
   return p1.compare(nullptr) == 0;
 }
 
-template<typename T1>
-inline bool operator!=(const owned_pointer<T1>& p1, std::nullptr_t) noexcept
+template<typename A>
+inline bool operator!=(const owned_pointer<A>& p1, std::nullptr_t) noexcept
 {
   return p1.compare(nullptr) != 0;
 }
 
-template<typename T1>
-inline bool operator==(std::nullptr_t, const owned_pointer<T1>& p1) noexcept
+template<typename A>
+inline bool operator==(std::nullptr_t, const owned_pointer<A>& p1) noexcept
 {
   return p1 == nullptr;
 }
 
-template<typename T1>
-inline bool operator!=(std::nullptr_t, const owned_pointer<T1>& p1) noexcept
+template<typename A>
+inline bool operator!=(std::nullptr_t, const owned_pointer<A>& p1) noexcept
 {
   return p1 != nullptr;
 }
 
-template<typename T1, typename T2>
-inline bool operator==(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator==(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p1.compare(p2) == 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator!=(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator!=(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return !(p1 == p2);
 }
 
-template<typename T1, typename T2>
-inline bool operator<(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator<(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p1.compare(p2) < 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator<=(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator<=(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p1.compare(p2) <= 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator>(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator>(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p1.compare(p2) > 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator>=(const owned_pointer<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator>=(const owned_pointer<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p1.compare(p2) >= 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator==(const owned_pointer<T1>& p1, const T2* p2) noexcept
+template<typename A, typename B>
+inline bool operator==(const owned_pointer<A>& p1, const B* p2) noexcept
 {
   return p1.compare(p2) == 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator==(const T1* p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator==(const A* p1, const owned_pointer<B>& p2) noexcept
 {
   return p2.compare(p1) == 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator!=(const owned_pointer<T1>& p1, const T2* p2) noexcept
+template<typename A, typename B>
+inline bool operator!=(const owned_pointer<A>& p1, const B* p2) noexcept
 {
   return p1.compare(p2) != 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator!=(const T1* p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator!=(const A* p1, const owned_pointer<B>& p2) noexcept
 {
   return p2.compare(p1) != 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator==(const owned_pointer<T1>& p1, const std::unique_ptr<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator==(const owned_pointer<A>& p1, const std::unique_ptr<B>& p2) noexcept
 {
   return p1.compare(p2.get()) == 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator==(const std::unique_ptr<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator==(const std::unique_ptr<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p2.compare(p1.get()) == 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator!=(const owned_pointer<T1>& p1, const std::unique_ptr<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator!=(const owned_pointer<A>& p1, const std::unique_ptr<B>& p2) noexcept
 {
   return p1.compare(p2.get()) != 0;
 }
 
-template<typename T1, typename T2>
-inline bool operator!=(const std::unique_ptr<T1>& p1, const owned_pointer<T2>& p2) noexcept
+template<typename A, typename B>
+inline bool operator!=(const std::unique_ptr<A>& p1, const owned_pointer<B>& p2) noexcept
 {
   return p2.compare(p1.get()) != 0;
 }
