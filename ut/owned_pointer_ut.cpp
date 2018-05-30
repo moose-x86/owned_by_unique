@@ -160,6 +160,8 @@ TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
 TEST_F(owned_pointer_ut, throwIsDeletedWhenUniquePtr)
 {
   const auto p = pobu::make_owned<test_mock>();
+  expect_object_will_be_deleted(p);
+
   {
     auto u = p.unique_ptr();
   }
