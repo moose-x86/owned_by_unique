@@ -27,7 +27,7 @@
 #include <memory>
 #include <cassert>
 #include <exception>
-#include <functional>
+#include <new>
 #include <type_traits>
 
 namespace pobu
@@ -128,8 +128,6 @@ class owned_pointer : private std::shared_ptr<__priv::control_block_type>
   template <typename>
   friend class owned_pointer;
 
-  struct nothrow{};
-
 public:
   using element_type = Tp;
   using upointer_type = std::unique_ptr<element_type>;
@@ -189,7 +187,7 @@ public:
   element_type* get() const
   {
     throw_when_ptr_expired_and_object_has_virtual_dtor();
-    return get<nothrow>();
+    return get(std::nothrow);
   }
 
   element_type* operator->() const
@@ -209,7 +207,7 @@ public:
       if(!acquired())
       {
         std::get<__priv::_acquired>(base::operator*()) = true;
-        return upointer_type{ get<nothrow>() };
+        return upointer_type{ get(std::nothrow) };
       }
       throw unique_ptr_already_acquired();
     }
@@ -233,24 +231,23 @@ public:
 
   explicit operator bool() const noexcept
   {
-    return get<nothrow>() != nullptr;
+    return get(std::nothrow) != nullptr;
   }
 
   std::int8_t compare(const void* const ptr) const noexcept
   {
-    const void* this_ptr = get<nothrow>();
+    const void* this_ptr = get(std::nothrow);
     return this_ptr == ptr ? std::int8_t{0} : (this_ptr < ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
 
   template<typename T>
   std::int8_t compare(const owned_pointer<T>& p) const noexcept
   {
-    return compare( p.template get<nothrow>() );
+    return compare( p.get(std::nothrow) );
   }
 
 private:
-  template<typename>
-  element_type* get() const noexcept
+  element_type* get(std::nothrow_t) const noexcept
   {
     return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
   }
