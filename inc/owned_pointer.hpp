@@ -245,13 +245,13 @@ public:
   {
     return compare( p.get(std::nothrow) );
   }
-
-private:
+  
   element_type* get(std::nothrow_t) const noexcept
   {
-    return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
+    return base::operator bool() && !expired() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
   }
-
+  
+private:
   owned_pointer(element_type *const p, const bool acquired)
   {
     const auto ss = get_secret_when_possible(p);
