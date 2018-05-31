@@ -413,7 +413,7 @@ TEST_F(owned_pointer_ut, testIsNullAndNotNullMatchers)
 TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
 {
   auto p = pobu::make_owned<test_mock>();
-  auto r = pobu::make_owned<int>();
+  auto r = pobu::make_owned<test_mock>();
   const void* p_ptr = p.get();
   const void* r_ptr = r.get();
   {
@@ -458,6 +458,8 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
     ASSERT_TRUE(p >= r);
   else
     ASSERT_FALSE(p >= r);
+  
+  expect_object_will_be_deleted(r);
 }
 
 TEST_F(owned_pointer_ut, assertThatSharedStateWillBeUpdateAfterPtrOwnedDeletion)
