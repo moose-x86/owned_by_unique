@@ -187,7 +187,7 @@ public:
   element_type* get() const
   {
     throw_when_ptr_expired_and_object_has_virtual_dtor();
-    return get(std::nothrow);
+    return stored_address();
   }
 
   element_type* operator->() const
@@ -207,7 +207,7 @@ public:
       if(!acquired())
       {
         std::get<__priv::_acquired>(base::operator*()) = true;
-        return upointer_type{ get(std::nothrow) };
+        return upointer_type{ stored_address () };
       }
       throw unique_ptr_already_acquired();
     }
@@ -231,27 +231,31 @@ public:
 
   explicit operator bool() const noexcept
   {
-    return get(std::nothrow) != nullptr;
+    return stored_address() != nullptr;
   }
 
   std::int8_t compare(const void* const ptr) const noexcept
   {
-    const void* this_ptr = get(std::nothrow);
+    const void* this_ptr = stored_address();
     return this_ptr == ptr ? std::int8_t{0} : (this_ptr < ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
 
   template<typename T>
   std::int8_t compare(const owned_pointer<T>& p) const noexcept
   {
-    return compare( p.get(std::nothrow) );
+    return compare(p.stored_address());
   }
   
   element_type* get(std::nothrow_t) const noexcept
   {
-    return base::operator bool() && !expired() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
+    return !expired ()  ? stored_address() : nullptr;
   }
   
 private:
+  element_type* stored_address() const noexcept
+  {
+    return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
+  }
   owned_pointer(element_type *const p, const bool acquired)
   {
     const auto ss = get_secret_when_possible(p);
