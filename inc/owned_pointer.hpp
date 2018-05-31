@@ -233,6 +233,7 @@ public:
   {
     return stored_address() != nullptr;
   }
+  
   template  <typename T>
   std::int8_t compare(const T* ptr) const noexcept
   {
@@ -242,6 +243,7 @@ public:
     const void* this_ptr = stored_address();
     return this_ptr == (void*)ptr ? std::int8_t{0} : (this_ptr < (void*)ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
+  
   std::int8_t compare (std::nullptr_t) const noexcept
   {
     return compare<void>(nullptr);
@@ -259,6 +261,7 @@ public:
   }
   
 private:
+
   element_type* stored_address() const noexcept
   {
     return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
