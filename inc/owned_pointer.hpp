@@ -234,15 +234,19 @@ public:
     return stored_address() != nullptr;
   }
   template  <typename T>
-  std::int8_t compare(const T& ptr) const noexcept
+  std::int8_t compare(const T* ptr) const noexcept
   {
-    static_assert(std::is_convertible<T, element_type*>::value || std::is_convertible<element_type*, T>::value
+    static_assert(std::is_convertible<T*, element_type*>::value || std::is_convertible<element_type*, T*>::value
     , "Comparing pointer of different or non-derived type");
 
     const void* his_ptr = stored_address();
     return this_ptr == (void*)ptr ? std::int8_t{0} : (this_ptr < (void*)ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
-
+  std::int8_t compare (std::nullptr_t) const noexcept
+  {
+    return compare<void>(nullptr);
+  }
+  
   template<typename T>
   std::int8_t compare(const owned_pointer<T>& p) const noexcept
   {
