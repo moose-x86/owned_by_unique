@@ -142,22 +142,12 @@ public:
   owned_pointer& operator=(owned_pointer&&) noexcept = default;
   
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& p)
-  {
-    if(!p) return;
-
-    constexpr bool not_acquired = false;
-    operator=(owned_pointer<T>(p.release(), not_acquired));
-  }
+  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer(p.release(), false)
+  {}
 
   template<typename T>
-  owned_pointer(__priv::uptr_link<T>&& p)
-  {
-    if(!p.naked_pointer) return;
-
-    constexpr bool is_acquired = true;
-    operator=(owned_pointer<T>(p.naked_pointer, is_acquired));
-  }
+  owned_pointer(__priv::uptr_link<T>&& p) : owned_pointer(p.naked_pointer, true)
+  {}
 
   template<typename T>
   operator owned_pointer<T>() const noexcept 
@@ -249,6 +239,8 @@ private:
   
   owned_pointer(element_type *const p, const bool acquired)
   {
+    if(!p) return;
+    
     const auto ss = get_secret_when_possible(p);
 
     if(!base::operator bool())
