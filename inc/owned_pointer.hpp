@@ -154,7 +154,7 @@ public:
     operator=(owned_pointer<T>(p.naked_pointer, is_acquired));
   }
 
-  owned_pointer(const owned_pointer& op) noexcept = default
+  owned_pointer(const owned_pointer& op) noexcept = default;
   owned_pointer(owned_pointer&& op) noexcept = default; 
   owned_pointer& operator=(const owned_pointer& op) noexcept = default; 
   owned_pointer& operator=(owned_pointer&& op) noexcept = default;
