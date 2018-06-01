@@ -222,7 +222,6 @@ public:
   template<typename T>
   std::int8_t compare(const T& ptr) const noexcept
   {
-    static_assert(std::is_pointer<T>::value, "");
     static_assert(std::is_convertible<T, element_type*>::value || std::is_convertible<element_type*, T>::value
     , "Comparing pointer of different or non-derived type");
 
