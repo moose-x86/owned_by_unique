@@ -162,9 +162,9 @@ public:
   template<typename T>
   operator owned_pointer<T>() const noexcept 
   {
-    static_assert(std::is_convertible<element_type*, T*>::value, "Casting pointer of different or non-derived type");
+    static_assert(std::is_convertible<element_type*, T*>::value, "Casting to pointer of different or non-derived type");
     
-    owned_pointer<T> tmp;
+    owned_pointer<T> tmp{};
     tmp.base::operator=(*this);
     return tmp;
   } 
@@ -251,6 +251,7 @@ private:
   {
     return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
   }
+  
   owned_pointer(element_type *const p, const bool acquired)
   {
     const auto ss = get_secret_when_possible(p);
@@ -301,7 +302,7 @@ private:
 template<> struct owned_pointer<void>{};
 
 template<typename Object, typename... Args>
-inline owned_pointer<Object> make_owned(Args&&... args)
+inline auto make_owned(Args&&... args) -> owned_pointer<Object>
 {
   constexpr bool has_vdtor = std::has_virtual_destructor<Object>::value;
   using ptr_type = typename std::conditional<has_vdtor, __priv::destruction_notify_object<Object>, Object>::type;
