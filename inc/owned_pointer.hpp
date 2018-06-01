@@ -160,10 +160,10 @@ public:
   owned_pointer& operator=(owned_pointer&& op) noexcept = default;
   
   template <typename T>
-  operator owned_pointer <T>() const
+  operator owned_pointer<T>() const noexcept 
   {
-    static_assert(std::is_convertible< element_type*, T*>::value, "Assigning pointer of different or non-derived type");
-    owned_pointer <T> tmp;
+    static_assert(std::is_convertible<element_type*, T*>::value, "Casting pointer of different or non-derived type");
+    owned_pointer<T> tmp;
     tmp.base::operator=(*this);
     return tmp;
   } 
@@ -241,7 +241,7 @@ public:
   
   element_type* get(std::nothrow_t) const noexcept
   {
-    return !expired ()  ? stored_address() : nullptr;
+    return !expired()  ? stored_address() : nullptr;
   }
   
 private:
