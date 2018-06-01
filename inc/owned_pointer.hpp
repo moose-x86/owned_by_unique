@@ -154,35 +154,19 @@ public:
     operator=(owned_pointer<T>(p.naked_pointer, is_acquired));
   }
 
-  template<typename T>
-  owned_pointer(const owned_pointer<T>& op) noexcept
+  owned_pointer(const owned_pointer& op) noexcept = default
+  owned_pointer(owned_pointer&& op) noexcept = default; 
+  owned_pointer& operator=(const owned_pointer& op) noexcept = default; 
+  owned_pointer& operator=(owned_pointer&& op) noexcept = default;
+  
+  template <typename T>
+  operator owned_pointer <T>() const
   {
-    operator=(op);
-  }
-
-  template<typename T>
-  owned_pointer(owned_pointer<T>&& op) noexcept
-  {
-    operator=(std::move(op));
-  }
-
-  template<typename T>
-  owned_pointer& operator=(const owned_pointer<T>& op) noexcept
-  {
-    static_assert(std::is_convertible<T*, element_type*>::value, "Assigning pointer of different or non-derived type");
-
-    base::operator=(op);
-    return *this;
-  }
-
-  template<typename T>
-  owned_pointer& operator=(owned_pointer<T>&& op) noexcept
-  {
-    static_assert(std::is_convertible<T*, element_type*>::value, "Assigning pointer of different or non-derived type");
-
-    base::operator=(std::move(op));
-    return *this;
-  }
+    static_assert(std::is_convertible< element_type*, T*>::value, "Assigning pointer of different or non-derived type");
+    owned_pointer <T> tmp;
+    tmp.base::operator=(*this);
+    return tmp;
+  } 
 
   element_type* get() const
   {
