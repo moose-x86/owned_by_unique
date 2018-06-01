@@ -225,7 +225,7 @@ public:
     , "Comparing pointer of different or non-derived type");
 
     const void* this_ptr = stored_address();
-    return this_ptr == (void*)ptr ? std::int8_t{0} : (this_ptr < (void*)ptr ? std::int8_t{-1} : std::int8_t{+1});
+    return this_ptr == ptr ? std::int8_t{0} : (this_ptr < ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
   
   std::int8_t compare (std::nullptr_t) const noexcept
