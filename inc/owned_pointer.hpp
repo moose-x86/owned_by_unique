@@ -136,6 +136,11 @@ public:
   constexpr owned_pointer() noexcept = default;
   constexpr owned_pointer(std::nullptr_t) noexcept {}
 
+  owned_pointer(const owned_pointer&) noexcept = default;
+  owned_pointer(owned_pointer&&) noexcept = default; 
+  owned_pointer& operator=(const owned_pointer&) noexcept = default; 
+  owned_pointer& operator=(owned_pointer&&) noexcept = default;
+  
   template<typename T>
   owned_pointer(std::unique_ptr<T>&& p)
   {
@@ -154,15 +159,11 @@ public:
     operator=(owned_pointer<T>(p.naked_pointer, is_acquired));
   }
 
-  owned_pointer(const owned_pointer& op) noexcept = default;
-  owned_pointer(owned_pointer&& op) noexcept = default; 
-  owned_pointer& operator=(const owned_pointer& op) noexcept = default; 
-  owned_pointer& operator=(owned_pointer&& op) noexcept = default;
-  
-  template <typename T>
+  template<typename T>
   operator owned_pointer<T>() const noexcept 
   {
     static_assert(std::is_convertible<element_type*, T*>::value, "Casting pointer of different or non-derived type");
+    
     owned_pointer<T> tmp;
     tmp.base::operator=(*this);
     return tmp;
@@ -218,7 +219,7 @@ public:
     return stored_address() != nullptr;
   }
   
-  template  <typename T>
+  template<typename T>
   std::int8_t compare(const T* ptr) const noexcept
   {
     static_assert(std::is_convertible<T*, element_type*>::value || std::is_convertible<element_type*, T*>::value
