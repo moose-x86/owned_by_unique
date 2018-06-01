@@ -227,7 +227,7 @@ public:
   
   element_type* get(std::nothrow_t) const noexcept
   {
-    return !expired()  ? stored_address() : nullptr;
+    return !expired() ? stored_address() : nullptr;
   }
   
 private:
