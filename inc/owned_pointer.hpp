@@ -212,8 +212,8 @@ public:
   template<typename T>
   std::int8_t compare(const T& ptr) const noexcept
   {
-    static_assert(std::is_convertible<T, element_type*>::value || std::is_convertible<element_type*, T>::value
-    , "Comparing pointer of different or non-derived type");
+    static_assert(std::is_convertible<T, element_type*>::value || std::is_convertible<element_type*, T>::value,
+    "Comparing pointer of different or non-derived type");
 
     const void* this_ptr = stored_address();
     return this_ptr == ptr ? std::int8_t{0} : (this_ptr < ptr ? std::int8_t{-1} : std::int8_t{+1});
@@ -240,7 +240,6 @@ private:
   owned_pointer(element_type *const p, const bool acquired)
   {
     if(!p) return;
-    
     const auto ss = get_secret_when_possible(p);
 
     if(!base::operator bool())
