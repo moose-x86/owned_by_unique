@@ -149,16 +149,6 @@ public:
   owned_pointer(__priv::uptr_link<T>&& p) : owned_pointer(p.naked_pointer, true)
   {}
 
-  template<typename T>
-  operator owned_pointer<T>() const noexcept 
-  {
-    static_assert(std::is_convertible<element_type*, T*>::value, "Casting to pointer of different or non-derived type");
-    
-    owned_pointer<T> tmp{};
-    tmp.base::operator=(*this);
-    return tmp;
-  } 
-
   element_type* get() const
   {
     throw_when_ptr_expired_and_object_has_virtual_dtor();
@@ -208,6 +198,16 @@ public:
   {
     return stored_address() != nullptr;
   }
+  
+  template<typename T>
+  operator owned_pointer<T>() const noexcept 
+  {
+    static_assert(std::is_convertible<element_type*, T*>::value, "Casting to pointer of different or non-derived type");
+    
+    owned_pointer<T> tmp{};
+    tmp.base::operator=(*this);
+    return tmp;
+  } 
   
   template<typename T>
   std::int8_t compare(const T& ptr) const noexcept
