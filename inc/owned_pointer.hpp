@@ -100,54 +100,45 @@ struct uptr_link
   uptr_link& operator=(const uptr_link&) = delete;
 
   template<typename R>
-  explicit uptr_link(const std::unique_ptr<R>& u) noexcept : naked_pointer(u.get()) {}
+  explicit uptr_link(const std::unique_ptr<R>& u) noexcept : forwarded_pointer(u.get()) {}
 
-  T* const naked_pointer;
+  T* const forwarded_pointer;
 };
 
 } // namespace __priv
 
 struct unique_ptr_already_acquired : public std::runtime_error
 {
-  unique_ptr_already_acquired() : std::runtime_error("owned_pointer: This pointer is already acquired by unique_ptr")
-  {}
+  unique_ptr_already_acquired() : std::runtime_error("owned_pointer: This pointer is already acquired by unique_ptr") {}
 };
 
 struct ptr_is_already_deleted : public std::runtime_error
 {
-  ptr_is_already_deleted() : std::runtime_error("owned_pointer: This pointer is already deleted")
-  {}
+  ptr_is_already_deleted() : std::runtime_error("owned_pointer: This pointer is already deleted") {}
 };
 
 template<typename Tp>
 class owned_pointer : private std::shared_ptr<__priv::control_block_type>
 {
   static_assert(!std::is_array<Tp>::value && !std::is_pointer<Tp>::value, "no array nor pointer supported");
-  using base = std::shared_ptr<__priv::control_block_type>;
+  using base_t = std::shared_ptr<__priv::control_block_type>;
 
   template <typename>
   friend class owned_pointer;
 
 public:
   using element_type = Tp;
-  using upointer_type = std::unique_ptr<element_type>;
-  using base::use_count;
+  using upointer_t = std::unique_ptr<element_type>;
+  using base_t::use_count;
 
   constexpr owned_pointer() noexcept = default;
   constexpr owned_pointer(std::nullptr_t) noexcept {}
 
-  owned_pointer(const owned_pointer&) noexcept = default;
-  owned_pointer(owned_pointer&&) noexcept = default; 
-  owned_pointer& operator=(const owned_pointer&) noexcept = default; 
-  owned_pointer& operator=(owned_pointer&&) noexcept = default;
-  
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer(p.release(), false)
-  {}
+  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{ p.release(), false } {}
 
   template<typename T>
-  owned_pointer(__priv::uptr_link<T>&& p) : owned_pointer(p.naked_pointer, true)
-  {}
+  owned_pointer(__priv::uptr_link<T>&& p) : owned_pointer{ p.forwarded_pointer, true } {}
 
   element_type* get() const
   {
@@ -165,14 +156,14 @@ public:
     return *get();
   }
 
-  upointer_type unique_ptr() const
+  upointer_t unique_ptr() const
   {
     if(get() != nullptr)
     {
       if(!acquired())
       {
-        std::get<__priv::_acquired>(base::operator*()) = true;
-        return upointer_type{ stored_address () };
+        std::get<__priv::_acquired>(base_t::operator*()) = true;
+        return upointer_t{stored_address()};
       }
       throw unique_ptr_already_acquired();
     }
@@ -181,15 +172,15 @@ public:
 
   bool acquired() const noexcept
   {
-    return base::operator bool() && std::get<__priv::_acquired>(base::operator*());
+    return base_t::operator bool() && std::get<__priv::_acquired>(base_t::operator*());
   }
 
   bool expired() const noexcept
   {
-    return base::operator bool() && std::get<__priv::_deleted>(base::operator*());
+    return base_t::operator bool() && std::get<__priv::_deleted>(base_t::operator*());
   }
 
-  explicit operator upointer_type() const
+  explicit operator upointer_t() const
   {
     return unique_ptr();
   }
@@ -198,27 +189,29 @@ public:
   {
     return stored_address() != nullptr;
   }
-  
+
   template<typename T>
   operator owned_pointer<T>() const noexcept 
   {
-    static_assert(std::is_convertible<element_type*, T*>::value, "Casting to pointer of different or non-derived type");
+    static_assert(std::is_convertible<element_type*, T*>::value,
+                  "Casting to pointer of different or non-derived type");
     
     owned_pointer<T> tmp{};
-    tmp.base::operator=(*this);
+    tmp.base_t::operator=(*this);
     return tmp;
   } 
-  
-  template<typename T>
-  std::int8_t compare(const T& ptr) const noexcept
+
+  template<typename Pointer_t>
+  std::int8_t compare(const Pointer_t& ptr) const noexcept
   {
-    static_assert(std::is_convertible<T, element_type*>::value || std::is_convertible<element_type*, T>::value,
-    "Comparing pointer of different or non-derived type");
+    static_assert(std::is_convertible<Pointer_t, element_type*>::value ||
+                  std::is_convertible<element_type*, Pointer_t>::value,
+                  "Comparing pointer of different or non-derived type");
 
     const void* this_ptr = stored_address();
     return this_ptr == ptr ? std::int8_t{0} : (this_ptr < ptr ? std::int8_t{-1} : std::int8_t{+1});
   }
-  
+
   template<typename T>
   std::int8_t compare(const owned_pointer<T>& p) const noexcept
   {
@@ -231,10 +224,9 @@ public:
   }
   
 private:
-
   element_type* stored_address() const noexcept
   {
-    return base::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base::operator*())) : nullptr;
+    return base_t::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base_t::operator*())) : nullptr;
   }
   
   owned_pointer(element_type *const p, const bool acquired)
@@ -242,18 +234,18 @@ private:
     if(!p) return;
     const auto ss = get_secret_when_possible(p);
 
-    if(!base::operator bool())
+    if(!base_t::operator bool())
     {
       constexpr bool is_not_aquired{false};
       constexpr bool is_not_deleted{false};
 
-      base::reset(
+      base_t::reset(
         new __priv::control_block_type(p, is_not_aquired, is_not_deleted),
         __priv::owned_deleter<element_type>()
       );
       set_shared_secret_when_possible(ss);
     }
-    std::get<__priv::_acquired>(base::operator*()) = acquired;
+    std::get<__priv::_acquired>(base_t::operator*()) = acquired;
   }
 
   void throw_when_ptr_expired_and_object_has_virtual_dtor() const
@@ -267,7 +259,7 @@ private:
   {
     if(const auto ss = dynamic_cast<__priv::shared_secret*>(p))
     {
-      base::operator=(ss->control_block.lock());
+      base_t::operator=(ss->control_block.lock());
       return ss;
     }
     return nullptr;
