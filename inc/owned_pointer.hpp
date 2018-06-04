@@ -23,11 +23,11 @@
 **/
 #pragma once
 
+#include <new>
 #include <tuple>
 #include <memory>
 #include <cassert>
 #include <exception>
-#include <new>
 #include <type_traits>
 
 namespace pobu
@@ -94,7 +94,7 @@ struct destruction_notify_object : base, shared_secret
 template<typename T>
 struct uptr_link
 {
-  uptr_link(uptr_link&&) = default;
+  uptr_link(uptr_link&&) noexcept = default;
   uptr_link(const uptr_link&) = delete;
   uptr_link& operator=(uptr_link&&) = delete;
   uptr_link& operator=(const uptr_link&) = delete;
@@ -191,15 +191,15 @@ public:
   }
 
   template<typename T>
-  operator owned_pointer<T>() const noexcept 
+  operator owned_pointer<T>() const noexcept
   {
     static_assert(std::is_convertible<element_type*, T*>::value,
                   "Casting to pointer of different or non-derived type");
-    
+
     owned_pointer<T> tmp{};
     tmp.base_t::operator=(*this);
     return tmp;
-  } 
+  }
 
   template<typename Pointer_t>
   std::int8_t compare(const Pointer_t& ptr) const noexcept
@@ -217,18 +217,19 @@ public:
   {
     return compare(p.stored_address());
   }
-  
+
   element_type* get(std::nothrow_t) const noexcept
   {
     return !expired() ? stored_address() : nullptr;
   }
-  
+
 private:
   element_type* stored_address() const noexcept
   {
-    return base_t::operator bool() ? static_cast<element_type*>(std::get<__priv::_ptr>(base_t::operator*())) : nullptr;
+    return base_t::operator bool() ?
+        static_cast<element_type*>(std::get<__priv::_ptr>(base_t::operator*())) : nullptr;
   }
-  
+
   owned_pointer(element_type *const p, const bool acquired)
   {
     if(!p) return;
@@ -236,11 +237,8 @@ private:
 
     if(!base_t::operator bool())
     {
-      constexpr bool is_not_aquired{false};
-      constexpr bool is_not_deleted{false};
-
       base_t::reset(
-        new __priv::control_block_type(p, is_not_aquired, is_not_deleted),
+        new __priv::control_block_type(p, {}, {}),
         __priv::owned_deleter<element_type>()
       );
       set_shared_secret_when_possible(ss);
