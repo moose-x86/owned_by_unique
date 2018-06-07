@@ -157,29 +157,15 @@ TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
   ASSERT_EQ(u.get(), p.get());
 }
 
-TEST_F(owned_pointer_ut, testMoveSemantics)
-{
-  auto p = pobu::make_owned<int>();
-  auto u = std::move(p);
-
-  ASSERT_TRUE(p.get() == nullptr);
-  ASSERT_TRUE(u.get() != nullptr);
- 
-  p = std::move(u);
-  
-  ASSERT_TRUE(p.get() != nullptr);
-  ASSERT_TRUE(u.get() == nullptr);
-}
-
 TEST_F(owned_pointer_ut, getWithNothrowPolicy)
 {
   auto p = pobu::make_owned<test_mock>();
   auto u = expect_that_get_unique_dont_throw(p);
   expect_object_will_be_deleted(p);
-  
+
   ASSERT_TRUE(p.get(std::nothrow) != nullptr);
   u.reset();
-  
+
   ASSERT_NO_THROW(p.get(std::nothrow));
   ASSERT_TRUE(p.get(std::nothrow) == nullptr);
 }
@@ -485,7 +471,7 @@ TEST_F(owned_pointer_ut, assertThatCompareOperatorsDontThrow)
     ASSERT_TRUE(p >= r);
   else
     ASSERT_FALSE(p >= r);
-  
+
   expect_object_will_be_deleted(r);
 }
 
