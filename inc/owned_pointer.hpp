@@ -136,10 +136,10 @@ public:
   constexpr owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{p.release(), false} {}
+  owned_pointer(__priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
 
   template<typename T>
-  owned_pointer(__priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
+  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{p.release(), false} {}
 
   auto get() const -> element_type*
   {
@@ -194,7 +194,7 @@ public:
     static_assert(std::is_convertible<element_type*, T*>::value,
                   "Casting to pointer of different or non-derived type");
 
-    auto casted{owned_pointer<T>{nullptr}};
+    auto casted{ owned_pointer<T>{nullptr} };
     return (static_cast<base_type&>(casted) = *this, casted);
   }
 
@@ -205,8 +205,8 @@ public:
                   std::is_convertible<element_type*, Pointer_t>::value,
                   "Comparing pointer of different or non-derived type");
 
-    const void* this_ptr = stored_address();
-    return this_ptr == ptr ? 0 : (this_ptr < ptr ? -1 : +1);
+    const void* addr = stored_address();
+    return addr == ptr ? 0 : (addr < ptr ? -1 : +1);
   }
 
   template<typename T>
