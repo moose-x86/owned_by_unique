@@ -48,9 +48,9 @@ namespace __priv
 {
 using control_block_type = std::tuple<void*, bool, bool>;
 
-auto _ptr = +[](control_block_type& cb){ return std::get<0>(cb); };
-auto _acquired = +[](control_block_type& cb) -> bool& { return std::get<1>(cb); };
-auto _deleted = +[](control_block_type& cb) -> bool& { return std::get<2>(cb); };
+const auto _ptr = +[](control_block_type& cb){ return std::get<0>(cb); };
+const auto _acquired = +[](control_block_type& cb) -> bool& { return std::get<1>(cb); };
+const auto _deleted = +[](control_block_type& cb) -> bool& { return std::get<2>(cb); };
 
 template<typename T>
 struct owned_deleter
