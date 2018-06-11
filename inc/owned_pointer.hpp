@@ -35,7 +35,7 @@ namespace pobu
 
 namespace __priv
 {
-template<typename> struct link_ptr;
+template<typename> class link_ptr;
 }
 
 template<typename T>
