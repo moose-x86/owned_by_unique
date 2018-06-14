@@ -205,7 +205,7 @@ public:
                   std::is_convertible<element_type*, Pointer_t>::value,
                   "Comparing pointer of different or non-derived type");
 
-    const void* addr = stored_address();
+    const void* addr{stored_address()};
     return addr == ptr ? 0 : (addr < ptr ? -1 : +1);
   }
 
