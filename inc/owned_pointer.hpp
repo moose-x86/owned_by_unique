@@ -139,7 +139,7 @@ public:
   owned_pointer(__priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
 
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{p.release(), false} {}
+  owned_pointer(std::unique_ptr<T>&& pt) : owned_pointer{pt.release(), false} {}
 
   auto get() const -> element_type*
   {
@@ -160,7 +160,7 @@ public:
   auto unique_ptr() const -> uptr_type
   {
     if(!get())
-      return uptr_type{nullptr};
+      return uptr_type{ nullptr };
 
     if(acquired())
       throw unique_ptr_already_acquired();
@@ -273,7 +273,8 @@ private:
 };
 
 template<>
-struct owned_pointer<void>{};
+struct owned_pointer<void>
+{};
 
 template<typename Object, typename... Args>
 inline auto make_owned(Args&&... args) -> owned_pointer<Object>
@@ -404,10 +405,10 @@ inline bool operator!=(const std::unique_ptr<A>& p1, const owned_pointer<B>& p2)
   return p2.compare(p1.get()) != 0;
 }
 
-template<typename R, typename T>
-owned_pointer<R> ptr_static_cast(const owned_pointer<T>& p)
+template<typename To, typename From>
+auto ptr_static_cast(const owned_pointer<From>& from) -> owned_pointer<To>
 {
-  return owned_pointer<R>(p);
+  return { from };
 }
 
 } //namespace pobu
