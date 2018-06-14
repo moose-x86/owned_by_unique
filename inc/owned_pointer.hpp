@@ -406,7 +406,7 @@ inline bool operator!=(const std::unique_ptr<A>& p1, const owned_pointer<B>& p2)
 }
 
 template<typename To, typename From>
-auto ptr_static_cast(const owned_pointer<From>& from) -> owned_pointer<To>
+auto ptr_static_cast(const owned_pointer<From>& from) noexcept -> owned_pointer<To>
 {
   return { from };
 }
