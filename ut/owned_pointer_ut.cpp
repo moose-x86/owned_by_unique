@@ -62,19 +62,22 @@ protected:
   template<typename T> void assert_that_operators_throw(pobu::owned_pointer<T> &p)
   {
     ASSERT_TRUE(p.expired());
+    ASSERT_NO_THROW(p.get(std::nothrow));
+    ASSERT_TRUE(p.get(std::nothrow) == nullptr);
+
     ASSERT_THROW(*p, pobu::ptr_is_already_deleted);
     ASSERT_THROW(p.get(), pobu::ptr_is_already_deleted);
     ASSERT_THROW(p.operator->(), pobu::ptr_is_already_deleted);
-    ASSERT_NO_THROW(p.get(std::nothrow));
   }
 
   template<typename T> void assert_that_operators_dont_throw(pobu::owned_pointer<T> &p)
   {
     ASSERT_FALSE(p.expired());
+
     ASSERT_NO_THROW(*p);
     ASSERT_NO_THROW(p.get());
-    ASSERT_NO_THROW(p.get(std::nothrow));
     ASSERT_NO_THROW(p.operator->());
+    ASSERT_NO_THROW(p.get(std::nothrow));
   }
 
   template<typename T> void assert_that_get_unique_throws(pobu::owned_pointer<T> &p)
