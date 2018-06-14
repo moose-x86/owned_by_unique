@@ -33,18 +33,18 @@
 namespace pobu
 {
 
-namespace __priv
+namespace _priv
 {
 template<typename> class link_ptr;
 }
 
 template<typename T>
-__priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept;
+_priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept;
 
 template<typename R, typename T>
-__priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept;
+_priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept;
 
-namespace __priv
+namespace _priv
 {
 using control_block_type = std::tuple<void*, bool, bool>;
 
@@ -106,7 +106,7 @@ private:
   T* const ptr;
 };
 
-} // namespace __priv
+} // namespace _priv
 
 struct unique_ptr_already_acquired : public std::runtime_error
 {
@@ -119,10 +119,10 @@ struct ptr_is_already_deleted : public std::runtime_error
 };
 
 template<typename Tp>
-class owned_pointer : std::shared_ptr<__priv::control_block_type>
+class owned_pointer : std::shared_ptr<_priv::control_block_type>
 {
   static_assert(!std::is_array<Tp>::value && !std::is_pointer<Tp>::value, "no array nor pointer supported");
-  using base_type = std::shared_ptr<__priv::control_block_type>;
+  using base_type = std::shared_ptr<_priv::control_block_type>;
 
   template<typename>
   friend class owned_pointer;
@@ -136,10 +136,10 @@ public:
   constexpr owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename T>
-  owned_pointer(__priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
+  owned_pointer(_priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
 
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& pt) : owned_pointer{pt.release(), false} {}
+  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{p.release(), false} {}
 
   auto get() const -> element_type*
   {
@@ -165,17 +165,17 @@ public:
     if(acquired())
       throw unique_ptr_already_acquired();
 
-    return __priv::_acquired(base_type::operator*()) = true, uptr_type{stored_address()};
+    return _priv::_acquired(base_type::operator*()) = true, uptr_type{stored_address()};
   }
 
   auto acquired() const noexcept -> bool
   {
-    return base_type::operator bool() && __priv::_acquired(base_type::operator*());
+    return base_type::operator bool() && _priv::_acquired(base_type::operator*());
   }
 
   auto expired() const noexcept -> bool
   {
-    return base_type::operator bool() && __priv::_deleted(base_type::operator*());
+    return base_type::operator bool() && _priv::_deleted(base_type::operator*());
   }
 
   explicit operator uptr_type() const
@@ -224,7 +224,7 @@ private:
   auto stored_address() const noexcept -> element_type*
   {
     return base_type::operator bool() ?
-        static_cast<element_type*>(__priv::_ptr(base_type::operator*())) : nullptr;
+        static_cast<element_type*>(_priv::_ptr(base_type::operator*())) : nullptr;
   }
 
   void throw_when_ptr_expired_and_object_has_virtual_dtor() const
@@ -241,18 +241,18 @@ private:
     if(!base_type::operator bool())
     {
       base_type::reset(
-        new __priv::control_block_type(p, {}, {}),
-        __priv::owned_deleter<element_type>()
+        new _priv::control_block_type(p, {}, {}),
+        _priv::owned_deleter<element_type>()
       );
       set_shared_secret_when_possible(ss);
     }
-    __priv::_acquired(base_type::operator*()) = acquired;
+    _priv::_acquired(base_type::operator*()) = acquired;
   }
 
   template<typename T, typename = typename std::enable_if<std::is_polymorphic<T>::value, void>::type>
-  auto get_secret_when_possible(T *const p) noexcept -> __priv::shared_secret*
+  auto get_secret_when_possible(T *const p) noexcept -> _priv::shared_secret*
   {
-    if(auto ss = dynamic_cast<__priv::shared_secret*>(p))
+    if(auto ss = dynamic_cast<_priv::shared_secret*>(p))
     {
       base_type::operator=(ss->control_block.lock());
       return ss;
@@ -260,12 +260,12 @@ private:
     return nullptr;
   }
 
-  auto get_secret_when_possible(...) noexcept -> __priv::shared_secret*
+  auto get_secret_when_possible(...) noexcept -> _priv::shared_secret*
   {
     return nullptr;
   }
 
-  void set_shared_secret_when_possible(__priv::shared_secret *const ss) const
+  void set_shared_secret_when_possible(_priv::shared_secret *const ss) const
   {
     if(ss != nullptr)
       ss->control_block = *this;
@@ -280,21 +280,21 @@ template<typename Object, typename... Args>
 inline auto make_owned(Args&&... args) -> owned_pointer<Object>
 {
   constexpr bool has_vdtor = std::has_virtual_destructor<Object>::value;
-  using T = std::conditional<has_vdtor, __priv::destruction_notify_object<Object>, Object>;
+  using T = std::conditional<has_vdtor, _priv::destruction_notify_object<Object>, Object>;
 
   return std::unique_ptr<Object>(new typename T::type{std::forward<Args>(args)...});
 }
 
 template<typename T>
-__priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept
+_priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept
 {
-  return __priv::link_ptr<T>(u);
+  return _priv::link_ptr<T>(u);
 }
 
 template<typename R, typename T>
-__priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept
+_priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept
 {
-  return __priv::link_ptr<R>(u);
+  return _priv::link_ptr<R>(u);
 }
 
 template<typename A>
