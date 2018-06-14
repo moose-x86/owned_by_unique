@@ -119,7 +119,7 @@ struct ptr_is_already_deleted : public std::runtime_error
 };
 
 template<typename Tp>
-class owned_pointer : private std::shared_ptr<__priv::control_block_type>
+class owned_pointer : std::shared_ptr<__priv::control_block_type>
 {
   static_assert(!std::is_array<Tp>::value && !std::is_pointer<Tp>::value, "no array nor pointer supported");
   using base_type = std::shared_ptr<__priv::control_block_type>;
