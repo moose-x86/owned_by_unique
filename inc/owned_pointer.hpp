@@ -39,18 +39,18 @@ template<typename> class link_ptr;
 }
 
 template<typename T>
-_priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept;
+auto link(const std::unique_ptr<T>& u) noexcept -> _priv::link_ptr<T>;
 
 template<typename R, typename T>
-_priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept;
+auto link(const std::unique_ptr<T>& u) noexcept -> _priv::link_ptr<R>;
 
 namespace _priv
 {
 using control_block_type = std::tuple<void*, bool, bool>;
 
-const auto _ptr = +[](control_block_type& cb){ return std::get<0>(cb); };
-const auto _acquired = +[](control_block_type& cb) -> bool& { return std::get<1>(cb); };
-const auto _deleted = +[](control_block_type& cb) -> bool& { return std::get<2>(cb); };
+const auto ptr      = +[](control_block_type& cb) -> void* { return std::get<0>(cb); };
+const auto deleted  = +[](control_block_type& cb) -> bool& { return std::get<2>(cb); };
+const auto acquired = +[](control_block_type& cb) -> bool& { return std::get<1>(cb); };
 
 template<typename T>
 struct owned_deleter
@@ -58,11 +58,11 @@ struct owned_deleter
   void operator()(control_block_type *const cb)
   {
 #ifdef OWNED_POINTER_ASSERT_DTOR
-    assert((!std::get<_acquired>(*cb)) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
+    assert((!std::get<acquired>(*cb)) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
 #endif
 
-    if(!_acquired(*cb))
-      delete static_cast<T*>(_ptr(*cb));
+    if(!acquired(*cb))
+      delete static_cast<T*>(ptr(*cb));
 
     delete cb;
   }
@@ -77,7 +77,7 @@ public:
 protected:
   void delete_event() noexcept
   {
-    if(auto p{control_block.lock()}) _deleted(*p) = true;
+    if(auto p{control_block.lock()}) deleted(*p) = true;
   }
 };
 
@@ -165,17 +165,22 @@ public:
     if(acquired())
       throw unique_ptr_already_acquired();
 
-    return _priv::_acquired(base_type::operator*()) = true, uptr_type{stored_address()};
+    return _priv::acquired(base_type::operator*()) = true, uptr_type{stored_address()};
+  }
+
+  auto raw_ptr() const -> element_type*
+  {
+    return unique_ptr().release();
   }
 
   auto acquired() const noexcept -> bool
   {
-    return base_type::operator bool() && _priv::_acquired(base_type::operator*());
+    return base_type::operator bool() && _priv::acquired(base_type::operator*());
   }
 
   auto expired() const noexcept -> bool
   {
-    return base_type::operator bool() && _priv::_deleted(base_type::operator*());
+    return base_type::operator bool() && _priv::deleted(base_type::operator*());
   }
 
   explicit operator uptr_type() const
@@ -194,15 +199,15 @@ public:
     static_assert(std::is_convertible<element_type*, T*>::value,
                   "Casting to pointer of different or non-derived type");
 
-    auto casted{ owned_pointer<T>{nullptr} };
-    return (static_cast<base_type&>(casted) = *this, casted);
+    owned_pointer<T> casted{nullptr};
+    return(static_cast<base_type&>(casted) = *this, casted);
   }
 
-  template<typename Pointer_t>
-  auto compare(const Pointer_t& ptr) const noexcept -> std::int8_t
+  template<typename T>
+  auto compare(const T& ptr) const noexcept -> std::int8_t
   {
-    static_assert(std::is_convertible<Pointer_t, element_type*>::value ||
-                  std::is_convertible<element_type*, Pointer_t>::value,
+    static_assert(std::is_convertible<T, element_type*>::value ||
+                  std::is_convertible<element_type*, T>::value,
                   "Comparing pointer of different or non-derived type");
 
     const auto addr{stored_address()};
@@ -220,16 +225,11 @@ public:
     return !expired() ? stored_address() : nullptr;
   }
 
-  auto raw_ptr() const -> element_type*
-  {
-    return unique_ptr().release();
-  }
-
 private:
   auto stored_address() const noexcept -> element_type*
   {
     return base_type::operator bool() ?
-        static_cast<element_type*>(_priv::_ptr(base_type::operator*())) : nullptr;
+        static_cast<element_type*>(_priv::ptr(base_type::operator*())) : nullptr;
   }
 
   void throw_when_ptr_expired_and_object_has_virtual_dtor() const
@@ -251,7 +251,7 @@ private:
       );
       set_shared_secret_when_possible(ss);
     }
-    _priv::_acquired(base_type::operator*()) = acquired;
+    _priv::acquired(base_type::operator*()) = acquired;
   }
 
   template<typename T, typename = typename std::enable_if<std::is_polymorphic<T>::value, void>::type>
@@ -291,15 +291,15 @@ inline auto make_owned(Args&&... args) -> owned_pointer<Object>
 }
 
 template<typename T>
-_priv::link_ptr<T> link(const std::unique_ptr<T>& u) noexcept
+auto link(const std::unique_ptr<T>& u) noexcept -> _priv::link_ptr<T>
 {
-  return _priv::link_ptr<T>(u);
+  return _priv::link_ptr<T>{u};
 }
 
 template<typename R, typename T>
-_priv::link_ptr<R> link(const std::unique_ptr<T>& u) noexcept
+auto link(const std::unique_ptr<T>& u) noexcept -> _priv::link_ptr<R>
 {
-  return _priv::link_ptr<R>(u);
+  return _priv::link_ptr<R>{u};
 }
 
 template<typename A>
