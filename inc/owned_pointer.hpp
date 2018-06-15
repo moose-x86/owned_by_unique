@@ -222,7 +222,7 @@ public:
 
   auto raw_ptr() const -> element_type*
   {
-      return unique_ptr().release();
+    return unique_ptr().release();
   }
 
 private:
