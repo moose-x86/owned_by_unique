@@ -220,6 +220,11 @@ public:
     return !expired() ? stored_address() : nullptr;
   }
 
+  auto raw_ptr() const -> element_type*
+  {
+      return unique_ptr().release();
+  }
+
 private:
   auto stored_address() const noexcept -> element_type*
   {
