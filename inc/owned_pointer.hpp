@@ -136,10 +136,10 @@ public:
   constexpr owned_pointer(std::nullptr_t) noexcept {}
 
   template<typename T>
-  owned_pointer(_priv::link_ptr<T>&& p) : owned_pointer{p.get(), true} {}
+  owned_pointer(_priv::link_ptr<T>&& p) : owned_pointer(p.get(), true) {}
 
   template<typename T>
-  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer{p.release(), false} {}
+  owned_pointer(std::unique_ptr<T>&& p) : owned_pointer(p.release(), false) {}
 
   auto get() const -> element_type*
   {
