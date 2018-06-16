@@ -277,6 +277,14 @@ private:
   }
 };
 
+#if __cplusplus == 201703L
+template<typename T>
+owned_pointer(std::unique_ptr<T>&&) -> owned_pointer<T>;
+
+template<typename T>
+owned_pointer(_priv::link_ptr<T>&&) -> owned_pointer<T>;
+#endif
+
 template<>
 struct owned_pointer<void>
 {};
