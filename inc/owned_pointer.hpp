@@ -57,12 +57,13 @@ struct owned_deleter
 {
   void operator()(control_block_type *const cb)
   {
+
 #ifdef OWNED_POINTER_ASSERT_DTOR
     assert(acquired(*cb) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
-#endif
-
+#else
     if(!acquired(*cb))
       delete static_cast<T*>(ptr(*cb));
+#endif
 
     delete cb;
   }
