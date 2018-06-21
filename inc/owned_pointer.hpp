@@ -58,7 +58,7 @@ struct owned_deleter
   void operator()(control_block_type *const cb)
   {
 #ifdef OWNED_POINTER_ASSERT_DTOR
-    assert((!std::get<acquired>(*cb)) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
+    assert(acquired(*cb) && "ASSERT: you created owned_pointer, but unique_ptr was never acquired");
 #endif
 
     if(!acquired(*cb))
