@@ -81,10 +81,10 @@ protected:
   }
 };
 
-template<typename base>
-struct destruction_notify_object : base, shared_secret
+template<typename Base>
+struct destruction_notify_object : Base, shared_secret
 {
-   using base::base;
+   using Base::Base;
    ~destruction_notify_object() override { delete_event(); }
 };
 
@@ -258,10 +258,8 @@ private:
   auto get_secret_when_possible(T *const p) noexcept -> _priv::shared_secret*
   {
     if(auto ss = dynamic_cast<_priv::shared_secret*>(p))
-    {
-      base_type::operator=(ss->control_block.lock());
-      return ss;
-    }
+      return base_type::operator=(ss->control_block.lock()), ss;
+
     return nullptr;
   }
 
