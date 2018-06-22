@@ -258,7 +258,7 @@ private:
   template<typename T, typename = typename std::enable_if<std::is_polymorphic<T>::value, void>::type>
   auto get_secret_when_possible(T *const p) noexcept -> _priv::shared_secret*
   {
-    if(auto ss = dynamic_cast<_priv::shared_secret*>(p))
+    if(auto ss{dynamic_cast<_priv::shared_secret*>(p)})
       return base_type::operator=(ss->control_block.lock()), ss;
 
     return nullptr;
@@ -276,7 +276,7 @@ private:
   }
 };
 
-#if __cplusplus == 201703L
+#if __cplusplus >= 201703L
 template<typename T>
 owned_pointer(std::unique_ptr<T>&&) -> owned_pointer<T>;
 
