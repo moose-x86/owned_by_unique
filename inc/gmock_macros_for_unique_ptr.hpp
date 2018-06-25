@@ -44,7 +44,7 @@ struct nth_arg<i, n, T> { typedef T type; };
 template<typename T> T& _forward(T& p) { return p; }
 
 template<typename T>
-pobu::owned_pointer<T> _forward(std::unique_ptr<T>& u)
+csp::owned_pointer<T> _forward(std::unique_ptr<T>& u)
 {
   return { std::move(u) };
 }
@@ -99,7 +99,7 @@ struct mock_func_param_deduction
   using result = typename std::conditional
   <
     type_info<typename func_signature<T>::result>::is_unique and swap,
-    pobu::owned_pointer<
+    csp::owned_pointer<
       typename type_info<typename func_signature<T>::result>::type
     >,
     typename func_signature<T>::result
@@ -109,7 +109,7 @@ struct mock_func_param_deduction
   using arg = typename std::conditional
   <
     type_info<typename func_signature<T>::template arg<i>>::is_unique and swap,
-    pobu::owned_pointer<
+    csp::owned_pointer<
       typename type_info<typename func_signature<T>::template arg<i>>::type
     >,
     typename func_signature<T>::template arg<i>
