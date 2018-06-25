@@ -106,6 +106,14 @@ private:
   T* const ptr;
 };
 
+template<typename T>
+struct is_expired_enabled :
+  std::integral_constant<bool, std::has_virtual_destructor<T>::value
+                                #if __cplusplus >= 201402L
+                                  && !std::is_final_v<T>
+                                #endif
+                        > {};
+
 } // namespace _priv
 
 template<typename Tp>
@@ -341,19 +349,6 @@ owned_pointer<T>::owned_pointer(element_type *const p, const bool acquired)
   }
   _priv::acquired(base_type::operator*()) = acquired;
 }
-
-namespace _priv
-{
-
-template<typename T>
-struct is_expired_enabled :
-  std::integral_constant<bool, std::has_virtual_destructor<T>::value
-                                #if __cplusplus >= 201402L
-                                  && !std::is_final_v<T>
-                                #endif
-                        > {};
-}
-
 
 /*****************************************************************************************
  *
