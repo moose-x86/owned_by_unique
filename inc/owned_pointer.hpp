@@ -342,6 +342,19 @@ owned_pointer<T>::owned_pointer(element_type *const p, const bool acquired)
   _priv::acquired(base_type::operator*()) = acquired;
 }
 
+namespace _priv
+{
+
+template<typename T>
+struct is_expired_enabled :
+  std::integral_constant<bool, std::has_virtual_destructor<T>::value
+                                #if __cplusplus >= 201402L
+                                  && !std::is_final_v<T>
+                                #endif
+                        > {};
+}
+
+
 /*****************************************************************************************
  *
  * Public non-member functions
@@ -349,53 +362,48 @@ owned_pointer<T>::owned_pointer(element_type *const p, const bool acquired)
  *****************************************************************************************/
 
 template<typename T>
-struct is_nothrow_dereferencable :
-  std::integral_constant<bool, !std::has_virtual_destructor<T>::value
-                                #if __cplusplus >= 201402L
-                                  || std::is_final_v<T>
-                                #endif
-                        > {};
+struct is_expired_enabled {};
 
 template<typename T>
-struct is_nothrow_dereferencable<owned_pointer<T>> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 template<typename T>
-struct is_nothrow_dereferencable<owned_pointer<T>&> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>&> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 template<typename T>
-struct is_nothrow_dereferencable<const owned_pointer<T>&> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>&> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 template<typename T>
-struct is_nothrow_dereferencable<const owned_pointer<T>> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 template<typename T>
-struct is_nothrow_dereferencable<owned_pointer<T>&&> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>&&> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 template<typename T>
-struct is_nothrow_dereferencable<const owned_pointer<T>&&> :
-  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>&&> :
+  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
 
 #if __cplusplus >= 201402L
 template<typename T>
-constexpr bool is_nothrow_dereferencable_v{is_nothrow_dereferencable<T>::value};
+constexpr bool is_expired_enabled_v{is_expired_enabled<T>::value};
 #endif
 
 template<typename T>
-inline bool is_nothrow_dereferencable_f(const owned_pointer<T>& p) noexcept
+inline bool is_expired_enabled_f(const owned_pointer<T>& p) noexcept
 {
-  return is_nothrow_dereferencable<decltype(p)>::value;
+  return is_expired_enabled<decltype(p)>::value;
 }
 
 template<typename Object, typename... Args>
 inline auto make_owned(Args&&... args) -> owned_pointer<Object>
 {
   using C = std::conditional<
-               !is_nothrow_dereferencable<Object>::value,
+               _priv::is_expired_enabled<Object>::value,
                _priv::destruction_notify_object<Object> ,
                Object
             >;
@@ -425,7 +433,7 @@ inline auto static_pointer_cast(const owned_pointer<From>& from) noexcept -> own
 template<typename T, typename F>
 inline auto dynamic_pointer_cast(const owned_pointer<F>& from) noexcept -> owned_pointer<T>
 {
-  static_assert(is_nothrow_dereferencable<F>::value, "Only possible for polymorphic types");
+  static_assert(is_expired_enabled<decltype(from)>::value, "Only possible for polymorphic types");
 
   if (!from.expired())
   {

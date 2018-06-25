@@ -160,7 +160,24 @@ TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
   auto u = expect_that_get_unique_dont_throw(p);
 
   ASSERT_EQ(u.get(), p.get());
-  ASSERT_TRUE(is_nothrow_dereferencable_f(p));
+  ASSERT_FALSE(is_expired_enabled_f(p));
+}
+
+TEST_F(owned_pointer_ut, isExpiredEnabledTest)
+{
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>&&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<test_mock>>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<test_mock>&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<test_mock>&&>::value);
+  
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&&>::value);
 }
 
 TEST_F(owned_pointer_ut, getWithNothrowPolicy)
@@ -175,7 +192,7 @@ TEST_F(owned_pointer_ut, getWithNothrowPolicy)
   ASSERT_NO_THROW(p.get(std::nothrow));
   ASSERT_TRUE(p.get(std::nothrow) == nullptr);
 
-  ASSERT_FALSE(is_nothrow_dereferencable_f(p));
+  ASSERT_TRUE(is_expired_enabled_f(p));
 }
 
 TEST_F(owned_pointer_ut, throwIsDeletedWhenUniquePtr)
