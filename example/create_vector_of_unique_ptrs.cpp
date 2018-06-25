@@ -13,7 +13,7 @@ struct Foo
 int main()
 {
   using namespace ::std;
-  using namespace ::pobu;
+  using namespace ::csp;
 
   std::vector<unique_ptr<Foo>> u;
   std::vector<owned_pointer<Foo>> v(15, nullptr);
