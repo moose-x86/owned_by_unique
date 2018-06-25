@@ -390,10 +390,7 @@ constexpr bool is_expired_enabled_v{is_expired_enabled<T>::value};
 template<typename T, typename = typename std::enable_if<_priv::is_expired_enabled<T>::value, void>::type>
 inline bool is_expired_enabled_f(const owned_pointer<T>& p) noexcept
 {
-  if(p.expired())  
-    return true;
-    
-  return dynamic_cast<_priv::shared_secret*>(p.operator->()) != nullptr;
+  return p.expired() || dynamic_cast<_priv::shared_secret*>(p.operator->()) != nullptr;
 }
 
 inline bool is_expired_enabled_f(...) noexcept 
