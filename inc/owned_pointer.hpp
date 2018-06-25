@@ -380,8 +380,6 @@ template<typename T>
 struct is_nothrow_dereferencable<const owned_pointer<T>&&> :
   std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
 
-
-
 #if __cplusplus >= 201402L
 template<typename T>
 constexpr bool is_nothrow_dereferencable_v{is_nothrow_dereferencable<T>::value};
