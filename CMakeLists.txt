@@ -31,5 +31,5 @@ add_executable(owned_pointer_ut ./ut/owned_pointer_ut.cpp)
 target_include_directories(owned_pointer INTERFACE inc/)
 target_include_directories(owned_pointer_ut SYSTEM PRIVATE ${GMOCK_INCLUDE_DIR} ${GTEST_INCLUDE_DIR})
 target_link_libraries(owned_pointer_ut PRIVATE owned_pointer gmock_main)
-   
+
 add_test(onwed_pointer_ut ${CMAKE_BINARY_DIR}/owned_pointer_ut --gtest_color=yes)

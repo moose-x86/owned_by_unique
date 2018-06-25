@@ -349,33 +349,55 @@ owned_pointer<T>::owned_pointer(element_type *const p, const bool acquired)
  *****************************************************************************************/
 
 template<typename T>
-struct is_nothrow_dereferencable : std::false_type {};
+struct is_nothrow_dereferencable :
+  std::integral_constant<bool, !std::has_virtual_destructor<T>::value
+                                #if __cplusplus >= 201402L
+                                  || std::is_final_v<T>
+                                #endif
+                        > {};
 
 template<typename T>
-struct is_nothrow_dereferencable<owned_pointer<T>>
- : std::integral_constant< bool, !std::has_virtual_destructor<T>::value
-                                 #if __cplusplus >= 201402L
-                                    || std::is_final_v<T>
-                                 #endif
-                         > {};
+struct is_nothrow_dereferencable<owned_pointer<T>> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+template<typename T>
+struct is_nothrow_dereferencable<owned_pointer<T>&> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+template<typename T>
+struct is_nothrow_dereferencable<const owned_pointer<T>&> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+template<typename T>
+struct is_nothrow_dereferencable<const owned_pointer<T>> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+template<typename T>
+struct is_nothrow_dereferencable<owned_pointer<T>&&> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+template<typename T>
+struct is_nothrow_dereferencable<const owned_pointer<T>&&> :
+  std::integral_constant<bool, is_nothrow_dereferencable<T>::value> {};
+
+
 
 #if __cplusplus >= 201402L
 template<typename T>
 constexpr bool is_nothrow_dereferencable_v{is_nothrow_dereferencable<T>::value};
 #endif
 
-
 template<typename T>
-inline auto is_nothrow_dereferencable_f(const owned_pointer<T>& = nullptr) noexcept -> bool
+inline bool is_nothrow_dereferencable_f(const owned_pointer<T>& p) noexcept
 {
-  return is_nothrow_dereferencable<owned_pointer<T>>::value;
+  return is_nothrow_dereferencable<decltype(p)>::value;
 }
 
 template<typename Object, typename... Args>
 inline auto make_owned(Args&&... args) -> owned_pointer<Object>
 {
   using C = std::conditional<
-               !is_nothrow_dereferencable<owned_pointer<Object>>::value,
+               !is_nothrow_dereferencable<Object>::value,
                _priv::destruction_notify_object<Object> ,
                Object
             >;
@@ -402,16 +424,16 @@ inline auto static_pointer_cast(const owned_pointer<From>& from) noexcept -> own
   return { from };
 }
 
-template<typename To, typename From>
-inline auto dynamic_pointer_cast(const owned_pointer<From>& from) noexcept -> owned_pointer<To>
+template<typename T, typename F>
+inline auto dynamic_pointer_cast(const owned_pointer<F>& from) noexcept -> owned_pointer<T>
 {
-  static_assert(std::is_polymorphic<From>::value, "Only possible for polymorphic types");
+  static_assert(is_nothrow_dereferencable<F>::value, "Only possible for polymorphic types");
 
   if (!from.expired())
   {
-    if (auto ss = dynamic_cast<To*>( from.operator->() ))
+    if (auto p = dynamic_cast<T*>( from.operator->() ))
     {
-      return std::unique_ptr<To>{ss};
+      return std::unique_ptr<T>{p};
     }
   }
 
