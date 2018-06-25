@@ -165,6 +165,13 @@ TEST_F(owned_pointer_ut, isUniqueAndPtrOwnedPointingSameAddress)
 
 TEST_F(owned_pointer_ut, isExpiredEnabledTest)
 {
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&>::value);
+  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&&>::value);
+  
   ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>>::value);
   ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>&>::value);
   ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<test_mock>&&>::value);
@@ -172,12 +179,12 @@ TEST_F(owned_pointer_ut, isExpiredEnabledTest)
   ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<test_mock>&>::value);
   ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<test_mock>&&>::value);
   
-  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>>::value);
-  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&>::value);
-  ASSERT_FALSE(csp::is_expired_enabled<csp::owned_pointer<int>&&>::value);
-  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>>::value);
-  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&>::value);
-  ASSERT_FALSE(csp::is_expired_enabled<const csp::owned_pointer<int>&&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<const test_mock>>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<const test_mock>&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<csp::owned_pointer<const test_mock>&&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<const test_mock>>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<const test_mock>&>::value);
+  ASSERT_TRUE(csp::is_expired_enabled<const csp::owned_pointer<const test_mock>&&>::value);
 }
 
 TEST_F(owned_pointer_ut, getWithNothrowPolicy)

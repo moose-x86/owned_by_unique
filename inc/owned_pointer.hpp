@@ -365,28 +365,22 @@ template<typename T>
 struct is_expired_enabled {};
 
 template<typename T>
-struct is_expired_enabled<owned_pointer<T>> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>> : _priv::is_expired_enabled<T> {};
 
 template<typename T>
-struct is_expired_enabled<owned_pointer<T>&> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>&> : _priv::is_expired_enabled<T> {};
 
 template<typename T>
-struct is_expired_enabled<const owned_pointer<T>&> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<owned_pointer<T>&&> : _priv::is_expired_enabled<T> {};
 
 template<typename T>
-struct is_expired_enabled<const owned_pointer<T>> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>> : _priv::is_expired_enabled<T> {};
 
 template<typename T>
-struct is_expired_enabled<owned_pointer<T>&&> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>&> : _priv::is_expired_enabled<T> {};
 
 template<typename T>
-struct is_expired_enabled<const owned_pointer<T>&&> :
-  std::integral_constant<bool, _priv::is_expired_enabled<T>::value> {};
+struct is_expired_enabled<const owned_pointer<T>&&> : _priv::is_expired_enabled<T> {};
 
 #if __cplusplus >= 201402L
 template<typename T>
