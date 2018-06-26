@@ -388,7 +388,7 @@ inline bool is_expired_enabled_f(const owned_pointer<T>& p) noexcept
   return p.expired() || dynamic_cast<_priv::shared_secret*>(p.operator->()) != nullptr;
 }
 
-inline bool is_expired_enabled_f(...) noexcept 
+inline bool is_expired_enabled_f(...) noexcept
 {
   return false;
 }
