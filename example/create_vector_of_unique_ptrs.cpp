@@ -27,7 +27,7 @@ int main()
   u.clear();
 
   v.erase(
-      std::remove_if(v.begin(), v.end(), [](const auto& p) { return p.expired(); }),
+      std::remove_if(v.begin(), v.end(), [](const owned_pointer<Foo>& p) { return p.expired(); }),
       v.end()
   );
   std::cout << "---------------------------\n";
