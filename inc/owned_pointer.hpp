@@ -322,7 +322,7 @@ inline auto owned_pointer<R>::compare(const owned_pointer<T>& p) const noexcept 
 template<typename T>
 auto owned_pointer<T>::stored_address() const noexcept -> element_type*
 {
-   return base_type::operator bool() ?
+  return base_type::operator bool() ?
        static_cast<element_type*>(_priv::ptr(base_type::operator*())) : nullptr;
 }
 
@@ -385,10 +385,11 @@ constexpr bool is_expired_enabled_v{is_expired_enabled<T>::value};
 template<typename T, typename = typename std::enable_if<_priv::is_expired_enabled<T>::value, void>::type>
 inline bool is_expired_enabled_f(const owned_pointer<T>& p) noexcept
 {
-  return p.expired() || dynamic_cast<_priv::shared_secret*>(p.operator->()) != nullptr;
+  return p.expired() || nullptr != dynamic_cast<_priv::shared_secret*>(p.operator->());
 }
 
-inline bool is_expired_enabled_f(...) noexcept
+template<typename T>
+inline bool is_expired_enabled_f(const T&) noexcept
 {
   return false;
 }

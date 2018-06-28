@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2.2)
 project("owned_pointer" CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(GMOCK_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/google-test/googlemock/include")
 set(GTEST_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/google-test/googletest/include")
 
