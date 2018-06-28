@@ -3,7 +3,7 @@
 [badge.release]: https://img.shields.io/badge/release-1.0-blue.svg
 
 [badge.godbolt]: https://img.shields.io/badge/try%20it-on%20godbolt-222266.svg
-[godbolt]: https://godbolt.org/g/8oS3nV
+[godbolt]: https://godbolt.org/g/GBemKv
 [release]: https://github.com/moose-x86/owned_by_unique/releases/latest
 
 # owned_pointer
