@@ -3,7 +3,7 @@
 [![godbolt][badge.godbolt]][godbolt]
 
 [badge.godbolt]: https://img.shields.io/badge/try%20it-on%20godbolt-222266.svg
-[godbolt]: https://godbolt.org/g/43cnJe
+[godbolt]: https://godbolt.org/g/8oS3nV
 
 
 # owned_pointer
