@@ -1,5 +1,11 @@
 [![Build Status](https://travis-ci.org/moose-x86/owned_by_unique.svg?branch=master)](https://travis-ci.org/moose-x86/owned_by_unique) [![Build status](https://ci.appveyor.com/api/projects/status/drdof9ajfooqk0um?svg=true)](https://ci.appveyor.com/project/moose-x86/owned-by-unique) [![codecov](https://codecov.io/gh/moose-x86/owned_by_unique/branch/master/graph/badge.svg)](https://codecov.io/gh/moose-x86/owned_by_unique)
 
+[![godbolt][badge.godbolt]][godbolt]
+
+[badge.godbolt]: https://img.shields.io/badge/try%20it-on%20godbolt-222266.svg
+[godbolt]: https://godbolt.org/g/43cnJe
+
+
 # owned_pointer
 This is test utility for dependency injection with ```std::unique_ptr``` smart pointer, written in C++ 11.
 Class ```csp::owned_pointer``` acts as facade to ```std::unique_ptr``` and has semantics and syntax of smart pointer.
