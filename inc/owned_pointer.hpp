@@ -110,7 +110,7 @@ template<typename T>
 struct is_expired_enabled :
   std::integral_constant<bool, std::has_virtual_destructor<T>::value
                                 #if __cplusplus >= 201402L
-                                  && !std::is_final_v<T>
+                                  && !std::is_final<T>::value
                                 #endif
                         > {};
 
