@@ -122,6 +122,12 @@ class owned_pointer : std::shared_ptr<_priv::control_block_type>
   static_assert(!std::is_array<Tp>::value && !std::is_pointer<Tp>::value, "no array nor pointer supported");
   using base_type = std::shared_ptr<_priv::control_block_type>;
 
+#ifdef OWNED_POINTER_STRICT_SAFETY
+  static_assert(
+      _priv::is_expired_enabled<Tp>::value,
+      "This type is not strictly safe to use with owned_pointer");
+#endif
+
   template<typename>
   friend class owned_pointer;
 
