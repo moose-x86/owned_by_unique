@@ -156,6 +156,21 @@ public:
   auto operator->() const -> element_type*;
   auto get(std::nothrow_t) const noexcept -> element_type*;
 
+  template<typename X = element_type>
+  auto begin() const -> decltype(std::declval<X>().begin()) { return get()->begin(); }
+  
+  template<typename X = element_type>
+  auto end() const -> decltype(std::declval<X>().end()) { return get()->end(); }
+  
+  template<typename X = element_type>
+  auto cbegin() const -> decltype(std::declval<X>().cbegin()) { return get()->cbegin(); }
+  
+  template<typename X = element_type>
+  auto cend() const -> decltype(std::declval<X>().cend()) { return get()->end(); }
+
+  template<typename X = element_type>
+  auto size() const -> decltype(std::declval<X>().size()) { return get()->size(); }
+  
   template<typename T>
   operator owned_pointer<T>() const noexcept;
 

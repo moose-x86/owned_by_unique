@@ -21,6 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
 **/
+#include <gmock/gmock-generated-matchers.h>
+#include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -559,4 +561,26 @@ TEST_F(owned_pointer_ut, testCastingAddressMovement)
     auto u = osf.create("test-test");
     take.giveme(*u);
   }
+}
+
+TEST_F(owned_pointer_ut, testBeginEndAndSizePropagation)
+{
+  std::vector<int> v{};
+  const auto o = csp::make_owned<std::vector<int>>(1, 2, 3, 4, 5);
+
+  std::copy(o.begin(), o.end(), std::back_inserter(v));
+
+  ASSERT_THAT(o.size(), ::testing::Eq(5));
+  ASSERT_THAT(v, ::testing::ElementsAre(1,2,3,4,5));
+}
+
+TEST_F(owned_pointer_ut, testCBeginEndAndSizePropagation)
+{
+  std::vector<int> v{};
+  const auto o = csp::make_owned<std::vector<int>>(1, 2, 3, 4, 5);
+
+  std::copy(o.cbegin(), o.cend(), std::back_inserter(v));
+
+  ASSERT_THAT(o.size(), ::testing::Eq(5));
+  ASSERT_THAT(v, ::testing::ElementsAre(1,2,3,4,5));
 }
